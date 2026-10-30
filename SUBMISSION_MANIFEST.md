@@ -2,7 +2,8 @@
 
 **Hackathon:** Mozilla OSAI — Developers Wilding: Online  
 **Project Name:** WildGuard — Policy-Aware Multi-Model AI Coding Agent Harness & Observability Workspace  
-**Status:** Stage 2 & Stage 2.6 Complete — Ready for First Integration Commit  
+**Status:** PUBLISHED & VERIFIED on GitHub  
+**Submission Timestamp:** 2026-10-30T16:40:00+01:00  
 
 ---
 
@@ -10,11 +11,12 @@
 
 | Item | Requirement | Current Status | Notes / Permalinks |
 |---|---|---|---|
-| **Public Repository** | Accessible Git repository | **CONFIGURED** | `https://github.com/JimmyOgb/wildguard` |
-| **Hackathon Feature Branch** | Required branch name: `feat/otari-agent-harness` | **ACTIVE** | Active branch: `feat/otari-agent-harness` |
+| **Public Repository** | Accessible Git repository | **VERIFIED** | [`https://github.com/JimmyOgb/wildguard`](https://github.com/JimmyOgb/wildguard) |
+| **Hackathon Feature Branch** | Required branch name: `feat/otari-agent-harness` | **VERIFIED** | [`feat/otari-agent-harness`](https://github.com/JimmyOgb/wildguard/tree/feat/otari-agent-harness) |
 | **Base Baseline Branch** | Pre-Otari baseline branch: `main` | **VERIFIED** | Baseline commit: `4eedb60` (`chore: initial pre-Otari baseline`) |
-| **First Otari Introduction Commit** | The FIRST commit on `feat/otari-agent-harness` must introduce Otari integration | **IN PROGRESS** | The first commit after `4eedb60` introduces the full Otari agent harness, tools, guardrails, decision gate, web interface, test suite, and judge-ready README together |
-| **Verified Commit Permalink** | Direct GitHub permalink to the introduction commit | **PENDING PUBLICATION** | Will be populated upon remote push verification |
+| **First Otari Introduction Commit** | The FIRST commit on `feat/otari-agent-harness` must introduce Otari integration | **VERIFIED** | Commit `c23a50930fd646b86fbebe02e80286976cd3e76b` introduced the complete Otari integration, security harness, web workspace, test suite, and judge documentation |
+| **Verified Commit Permalink** | Direct GitHub permalink to the introduction commit | **VERIFIED** | [`c23a509` Commit Permalink](https://github.com/JimmyOgb/wildguard/commit/c23a50930fd646b86fbebe02e80286976cd3e76b) |
+| **Published README Permalink** | Direct GitHub permalink to judge-ready README | **VERIFIED** | [`README.md` Permalink](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/README.md) |
 
 ---
 
