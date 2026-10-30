@@ -1,0 +1,29 @@
+{
+  "name": "wildguard",
+  "version": "1.0.0",
+  "description": "WildGuard — Open, Policy-Aware Coding Agent and Live Observability Dashboard",
+  "main": "dist/src/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc && node --test dist/tests/wildguard.test.js",
+    "typecheck": "tsc --noEmit",
+    "serve": "tsc && node dist/src/web/server.js",
+    "start": "node dist/src/web/server.js"
+  },
+  "keywords": [
+    "wildguard",
+    "otari",
+    "policy-aware",
+    "coding-agent",
+    "observability",
+    "guardrails",
+    "open-weight"
+  ],
+  "author": "WildGuard Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^5.8.0"
+  }
+}

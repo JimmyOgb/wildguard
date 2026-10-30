@@ -1,15 +1,30 @@
-# WildGuard — Otari Configuration Matrix
+# WildGuard — Otari Configuration & Verification Matrix
 
-| Capability | Required | Hosted availability | Configuration | Cost | WildGuard implementation |
+This matrix provides an accurate, audited classification of WildGuard's integration capabilities with the Otari gateway.
+
+### Verification Status Legend
+- **Endpoint Reachability Verified:** Proven by live HTTP probe (Envoy proxy response).
+- **Authentication Requirement Verified:** Proven by live HTTP 401 response requiring credential headers.
+- **Public Documentation Verified:** Sourced from official Mozilla-AI Otari source code and OpenAPI specifications.
+- **Authenticated Discovery Verified:** Requires active user API key (Pending user input).
+- **Model Configured:** Identifier declared in client configuration.
+- **Model Executed:** Actually invoked over live API connection (Simulated only until key supplied).
+- **Tool Implemented:** Code exists and runs in WildGuard.
+
+---
+
+| Capability | Required in WildGuard | Gateway Verification Status | Configuration Status | Cost Model | WildGuard Implementation Status |
 |---|---|---|---|---|---|
-| **Chat completions** | Yes | VERIFIED (`POST /api/v1/chat/completions`) | Configured via Base URL `https://api.otari.ai/api/v1` and Bearer token | Billed per model token (`usage.cost_usd`) | Primary inference pipeline in `src/otari/wildguardEngine.ts` |
-| **Model catalog** | Yes | VERIFIED (`GET /api/v1/models`) | Ready on hosted deployment; supports catalog and `provider:model` formats | N/A (Free catalog metadata query) | Model discovery & capability selector in `src/otari/config.ts` |
-| **Explorer model** | Yes | VERIFIED (`deepseek/deepseek-v4.1-flash` / `qwen/qwen-2.5-coder-7b`) | Declared in agent config; open-weight candidate for high-speed analysis | Verified low-cost open-weight rate (< $0.30/M tokens) | Fast repository scanning & exploration phase in `src/otari/wildguardEngine.ts` |
-| **Coder model** | Yes | VERIFIED (`deepseek/deepseek-r1` / `deepseek/deepseek-v3`) | Declared in agent config; open-weight candidate for code synthesis | Verified open-weight rate (< $2.50/M tokens) | Complex reasoning & patch generation escalation in `src/otari/wildguardEngine.ts` |
-| **Failover** | Yes | VERIFIED (`on_failure` routing policies) | Configured in Otari dashboard routing or client-side fallback loop | Zero gateway surcharge; charges only for serving model | Multi-tier model fallback & failover in `src/otari/wildguardEngine.ts` |
-| **Code execution** | Yes | REQUIRES CONFIGURATION (`otari_code_execution`) | Requires Docker sandbox URL or `E2B_API_KEY` in tool settings | Requires third-party E2B credits or self-hosted container | Verification engine; runs locally in sandbox if remote unavailable |
-| **Web search** | Yes | REQUIRES CONFIGURATION (`otari_web_search`) | Requires search provider key (Tavily, Brave, SerpApi, or Exa) | Per-call search rate (reported via `meta.billed_units.search_units`) | External documentation & library research in `src/otari/wildguardEngine.ts` |
-| **Web fetch** | Yes | VERIFIED (`otari_web_fetch` / `builtin_fetch`) | Built-in gateway fetcher; enabled via `web_fetch_enabled: true` | Free or micro-rate gateway charge | RFC, changelog, and documentation reader in `src/otari/wildguardEngine.ts` |
-| **MCP** | Yes | VERIFIED (Caller-orchestrated & stored MCP endpoints) | Remote MCP supported via `mcp_server_ids`; `stdio` not supported remotely | Free gateway proxy; upstream MCP costs if applicable | Local repository tools implemented as Application Function Tools in `src/otari/mcpRepoTools.ts` |
-| **Decisions API** | Yes | CONDITIONAL (`POST /api/v1/decisions`) | Requires `decision_providers` configured (e.g. `typesafe:jev-latest`) | Model-specific decision query rate | Automated structured go/no-go gate in `src/otari/decisionGate.ts` with JSON schema fallback |
-| **Usage telemetry** | Yes | VERIFIED (`Otari-Request-ID`, `usage.cost_usd`) | Automatically returned on every inference response header and body | N/A (Included with all gateway responses) | Live observability dashboard & budget meter in `src/otari/agentLoop.ts` |
+| **Chat completions** | Yes | **Endpoint Reachability & Auth Requirement Verified** (`POST /api/v1/chat/completions`) | Configured via Base URL `https://api.otari.ai/api/v1` and `Otari-Key` header | Billed per model token (`usage.cost_usd`) | **Implemented** in `src/otari/wildguardEngine.ts` (Executes in simulation mode; live execution ready pending key) |
+| **Model catalog** | Yes | **Endpoint Reachability & Auth Requirement Verified** (`GET /api/v1/models` returned 401) | Sourced from Otari `docs/models.md`; Authenticated discovery pending API key | N/A (Catalog metadata query) | **Configured** in `src/otari/config.ts` |
+| **Explorer model** (`deepseek/deepseek-v4.1-flash`) | Yes | **Public Documentation Verified** (Open-weight candidate) | **Model Configured** in `DEFAULT_CONFIG.EXPLORER_MODEL` | Open-weight rate (< $0.30/M tokens) | **Configured; Executed in Simulation Only**; Live execution pending API key |
+| **Coder model** (`alibaba/qwen-3.5-35b-a3b`) | Yes | **Public Documentation Verified** (Open-weight candidate) | **Model Configured** in `DEFAULT_CONFIG.CODER_MODEL` | Open-weight rate (< $2.50/M tokens) | **Configured; Executed in Simulation Only**; Live execution pending API key |
+| **Fallback model** (`meta-llama/llama-3.3-70b-instruct`) | Yes | **Public Documentation Verified** (Open-weight candidate) | **Model Configured** in `DEFAULT_CONFIG.FALLBACK_MODEL` | Open-weight rate | **Configured; Failover Logic Implemented & Unit-Tested**; Live execution pending API key |
+| **Model Routing & Failover** | Yes | **Public Documentation Verified** (`on_failure` policies) | Client-side automatic failover with budget stops in `WildGuardEngine` | Upstream model rate | **Implemented & Tested** in `wildguardEngine.ts` (Halts on 401/budget; fails over on transient errors) |
+| **Repository Tools** | Yes | **Local Perimeter Only** (Not remote Otari MCP) | Sandboxed in `src/otari/mcpRepoTools.ts` | $0.00 (Local filesystem) | **Implemented & Tested** (Application-owned tools: list, read, patch, branch) |
+| **Remote Otari MCP** | No | **Unimplemented** (Remote `/api/v1/mcp/execute` not invoked) | Remote MCP does not reach local machine stdio without tunnels | Upstream MCP pricing | **Unimplemented** (WildGuard uses application-owned local tools for zero-trust containment) |
+| **Built-in Web Fetch** | No | **Public Documentation Verified** (`builtin_fetch`) | Sourced from Otari docs; not invoked by agent | Gateway micro-rate | **Unimplemented / Unavailable** in agent execution |
+| **Built-in Web Search** | No | **Unavailable** (Requires Tavily/Brave key) | Not configured | Search provider fee | **Unimplemented / Unavailable** in agent execution |
+| **Hosted Code Execution** | No | **Unavailable** (Requires E2B key or Docker sandbox) | Not configured on remote gateway | E2B compute fee | **Unavailable via Otari**; Local test suite runs via native Node.js test runner |
+| **Decisions API** | Yes | **Public Documentation Verified** (`POST /api/v1/decisions`) | Requires `decision_providers` configured; client implements local fallback | Provider rate | **Implemented & Tested** in `src/otari/decisionGate.ts` (Includes AbortController timeout & fail-closed local gate) |
+| **Usage Telemetry** | Yes | **Public Documentation Verified** (`Otari-Request-ID`, `usage.cost_usd`) | Header & JSON usage parsed; tracks tokens, spend, and $1.50 cap | N/A | **Implemented & Tested** in `src/otari/telemetry.ts` (Rejects negative usage; isolates live vs simulated spend) |
