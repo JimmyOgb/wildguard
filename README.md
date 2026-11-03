@@ -4,10 +4,10 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)](package.json)
-[![Tests: 50 Passing](https://img.shields.io/badge/Tests-50%20Passing%20(9%20Suites)-brightgreen.svg)](tests/wildguard.test.ts)
+[![Tests: 132 Passing](https://img.shields.io/badge/Tests-132%20Passing%20(18%20Suites)-brightgreen.svg)](tests/wildguard.test.ts)
 [![AI Gateway](https://img.shields.io/badge/AI%20Gateway-Otari.ai%20(api.otari.ai)-FF6B6B)](https://otari.ai)
 [![Architecture](https://img.shields.io/badge/Architecture-Open--Weight%20Multi--Model-purple.svg)](#multi-model-strategy--gateway-fallback)
-[![Security Hardened](https://img.shields.io/badge/Security-Stage%202.6%20Hardened-orange.svg)](#deterministic-security-architecture-stage-26-hardened)
+[![Security Hardened](https://img.shields.io/badge/Security-Stage%204.19%20Hardened-orange.svg)](#deterministic-security-architecture-stage-26-hardened)
 [![Design](https://img.shields.io/badge/Frontend-GenChat%20Aligned-6366F1.svg)](#conversational-workspace--user-experience)
 
 ---
@@ -24,9 +24,44 @@ WildGuard solves this by deploying a **zero-trust deterministic policy harness**
 - **Unified AI Gateway:** Otari API (`https://api.otari.ai/api/v1`)
 - **Repository:** [`JimmyOgb/wildguard`](https://github.com/JimmyOgb/wildguard)
 - **Target Feature Branch:** `feat/otari-agent-harness`
-- **Initial Baseline Commit:** `4eedb60` (`chore: initial pre-Otari baseline`)
-- **Automated Test Coverage:** 50/50 unit and integration tests passing across 9 test suites
+- **First Otari Integration Commit:** [`c23a509`](https://github.com/JimmyOgb/wildguard/commit/c23a50930fd646b86fbebe02e80286976cd3e76b) (`feat: otari gateway multi-model harness, guardrails, and telemetry`)
+- **Live Audited Preview Deployment:** [https://wildguard-ewx3hdcst-jamism123.vercel.app](https://wildguard-ewx3hdcst-jamism123.vercel.app) (Deployment ID: `dpl_4mhdjHtCrhzRoPSUdP5VmjDTXYY8`)
+- **Automated Test Coverage:** 132/132 unit and integration tests passing across 18 test suites
 - **Frontend Reference:** Closely aligned with the polished, production-grade [GenChat reference design](https://genchat-nine.vercel.app/)
+
+---
+
+## ⚡ How to Test (Judge & Evaluator Guide)
+
+Judges and evaluators can immediately test WildGuard directly on the live preview deployment without registration, login credentials, or personal API keys:
+
+🔗 **Live Public Preview URL:** [https://wildguard-ewx3hdcst-jamism123.vercel.app](https://wildguard-ewx3hdcst-jamism123.vercel.app)  
+🎯 **Active Audited Deployment ID:** `dpl_4mhdjHtCrhzRoPSUdP5VmjDTXYY8`  
+🛡️ **Public Access Mode:** `auth.mode: "public_interactive"` (Zero credentials required)
+
+### What Judges Can Test Live Without Login:
+1. **Interactive Policy-Aware Chat & Gateway Inference:**
+   - Run prompt turns selecting the **Explorer** (`deepseek/deepseek-v4.1-flash`) or **Coder** (`alibaba/qwen-3.5-35b-a3b`) role.
+   - Send single verification turns via the composer. In Stage 4.23, an authorized public test proved real gateway connectivity (HTTP 200, 118 tokens, $0.000103 settled cost).
+2. **Demo Workspace & Safe Repository Exploration:**
+   - Browse the isolated, ephemeral demo project files in the web workspace.
+   - State and isolated changes are durably preserved across serverless invocations via Upstash Redis (`wildguard:workspace:<sessionId>`).
+3. **Step Loop Coding Workflow:**
+   - Execute bounded single-step planning and patch generation (`POST /api/workflow/step`).
+   - Each step is bounded under 10 seconds to fit within Vercel serverless execution limits.
+4. **Deterministic In-Memory Guardrails & Security Policies:**
+   - Attempt forbidden actions: reading `.env`, modifying protected `main` branches, NTFS alternate streams (`file:hidden::$DATA`), or parent directory traversal (`../`).
+   - Observe deterministic, immediate policy blocking with explicit RCE defense and guardrail banners.
+5. **Human-in-the-Loop Diff Review & Patch Application:**
+   - Inspect proposed unified diffs in the built-in diff viewer.
+   - Accept or reject changes to feature branches.
+6. **Real-Time Financial Telemetry & Budget Caps:**
+   - View atomic budget reservations ($0.05 per turn) and micro-dollar settlement counters backed by Upstash Redis ($10.00 global ceiling, $1.50 per-run cap).
+
+### Expected Behaviors & Platform Boundaries:
+- **Autonomous Monolithic Loops:** To protect users against Vercel Hobby 10-second serverless execution timeouts, unbounded monolithic loops (`POST /api/chat` with full autonomous execution) fail-fast with HTTP 400 `hobby_timeout_prevention`. Evaluators should use the **Step Loop** workflow or single-turn prompts.
+- **Reasoning Token Behavior:** Advanced reasoning models like Qwen 3.5 allocate tokens to internal reasoning before emitting output. If the completion token limit is reached during reasoning, the gateway returns HTTP 200 OK with empty content; WildGuard's UI displays an informative notice explaining this behavior.
+- **Deterministic Policy Runner:** For zero-trust security and to prevent Remote Code Execution (RCE) on shared hosting, repository policy verification runs using an in-memory deterministic runner.
 
 ---
 
@@ -116,7 +151,7 @@ WildGuard is meticulously engineered to achieve the maximum score across every e
 | **Otari Features** | Structured Decisions API | 10 | Quality/safety assessment gate with 10s timeout fail-closed fallback | `src/otari/decisionGate.ts` |
 | **Project & Demo** | Working use case | 5 | End-to-end coding agent with GenChat-aligned web interface | `src/web/server.ts` & `frontend/` |
 | **Project & Demo** | Demo video & walkthrough | 5 | Recorded walkthrough demonstrating safety guardrails and live workflow | [Demo Section](#10-demonstration-walkthrough--visual-evidence) |
-| **TOTAL** | **Maximum Capped Score** | **100** | **Comprehensive Full-Scope Alignment** | **50 Automated Tests Passing** |
+| **TOTAL** | **Maximum Capped Score** | **100** | **Comprehensive Full-Scope Alignment** | **132 Automated Tests Passing (18 Suites)** |
 
 > **Transparent Scope Disclosure:**
 > 1. *Repository Tools:* WildGuard implements application-owned, local sandboxed repository tools conforming to the MCP schema (`mcpRepoTools.ts`). It does not rely on unverified third-party hosted MCP servers.
@@ -339,8 +374,10 @@ npm run build
 
 ### 5. Launch the Web Interface
 ```bash
-npm run start:web
+npm start
 ```
+*(Alternatively, `npm run serve` will re-compile TypeScript and launch the server).*
+
 Open your browser to: **`http://localhost:3000`**
 
 ---

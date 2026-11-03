@@ -10,6 +10,9 @@ export * from './otari/telemetry.js';
 export * from './otari/decisionGate.js';
 export * from './otari/wildguardEngine.js';
 export * from './otari/agentLoop.js';
+export * from './otari/redisBudgetManager.js';
+export * from './otari/authManager.js';
+export * from './otari/workflowManager.js';
 export * from './web/server.js';
 
 import { loadConfig } from './otari/config.js';
@@ -18,6 +21,9 @@ import { TelemetryManager } from './otari/telemetry.js';
 import { DecisionGate } from './otari/decisionGate.js';
 import { WildGuardEngine } from './otari/wildguardEngine.js';
 import { AgentLoop } from './otari/agentLoop.js';
+import { RedisBudgetManager } from './otari/redisBudgetManager.js';
+import { AuthManager } from './otari/authManager.js';
+import { WorkflowManager } from './otari/workflowManager.js';
 
 /**
  * Convenience factory to create a fully wired WildGuard agent instance.
@@ -31,6 +37,23 @@ export function createWildGuardAgent(repoRoot: string, options?: { runId?: strin
   const engine = new WildGuardEngine(config, telemetry);
   const loop = new AgentLoop(engine, tools, decisionGate, telemetry);
 
+  const budgetManager = new RedisBudgetManager({
+    redisUrl: config.upstashRedisUrl,
+    redisToken: config.upstashRedisToken,
+    perRunCapUsd: config.maxRunCostUsd,
+    globalCeilingUsd: config.globalBudgetCeilingUsd,
+  });
+
+  const authManager = new AuthManager({
+    accessToken: config.accessToken,
+  });
+
+  const workflowManager = new WorkflowManager({
+    engine,
+    budgetManager,
+    tools,
+  });
+
   return {
     config,
     telemetry,
@@ -38,5 +61,8 @@ export function createWildGuardAgent(repoRoot: string, options?: { runId?: strin
     decisionGate,
     engine,
     loop,
+    budgetManager,
+    authManager,
+    workflowManager,
   };
 }

@@ -8,7 +8,16 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>" />
 </head>
 <body class="antialiased min-h-screen flex flex-col bg-zinc-950 text-zinc-100 selection:bg-amber-500 selection:text-zinc-950">
-  <div class="flex h-screen w-full bg-zinc-950 overflow-hidden text-zinc-100">
+  <!-- Public Preview Simulation Disclosure Banner -->
+  <div id="previewBanner" class="w-full bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border-b border-amber-500/30 px-3 py-1.5 flex items-center justify-between text-xs text-amber-300 z-30 shrink-0">
+    <div class="flex items-center gap-2 truncate">
+      <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/30 text-amber-200 border border-amber-500/40 uppercase shrink-0">Public Preview</span>
+      <span class="font-medium text-zinc-200 shrink-0">Simulation Sandbox:</span>
+      <span class="text-zinc-400 truncate hidden sm:inline">Operating exclusively in deterministic zero-cost simulation mode. Zero credentials loaded. Disk writes disabled.</span>
+    </div>
+    <span class="text-[10px] font-mono text-amber-400/90 shrink-0 ml-2 hidden md:inline">Zero Outbound API Calls</span>
+  </div>
+  <div class="flex flex-1 h-[calc(100vh-33px)] w-full bg-zinc-950 overflow-hidden text-zinc-100">
     <!-- Mobile Backdrop -->
     <div id="mobileBackdrop" class="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm hidden"></div>
 
@@ -157,6 +166,18 @@
             <span>Zero-Trust Active</span>
           </div>
 
+          <!-- Redis Budget Status Pill -->
+          <div id="headerRedisBadge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
+            <span id="redisDot" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
+            <span id="redisStatusText">Redis Budget</span>
+          </div>
+
+          <!-- Auth Status Button -->
+          <button id="authModalBtn" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono transition-colors">
+            <span id="authDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="authStatusText" class="text-zinc-300">Auth Gate</span>
+          </button>
+
           <!-- Live Spend Ledger Pill -->
           <div id="headerSpendBadge" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] font-mono text-amber-400">
             <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
@@ -256,11 +277,12 @@
             <div class="flex items-center gap-2">
               <!-- Role Selector Pills (GenChat-inspired mode switchers) -->
               <div class="flex items-center gap-1 p-1 bg-zinc-950/80 border border-zinc-800 rounded-xl">
-                <button id="roleAutonomousBtn" type="button" title="Full autonomous Explorer + Coder + Gate loop" class="role-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/60" data-role="autonomous">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                <button id="roleWorkflowBtn" type="button" title="Client-orchestrated turn-by-turn workflow (Vercel Hobby <10s)" class="role-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/60" data-role="workflow">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                   </svg>
-                  <span>Autonomous</span>
+                  <span>Step Loop</span>
                 </button>
                 <button id="roleExplorerBtn" type="button" title="Fast repository reconnaissance & planning" class="role-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40" data-role="explorer">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400">
@@ -274,6 +296,19 @@
                     <polyline points="8 6 2 12 8 18"></polyline>
                   </svg>
                   <span>Coder</span>
+                </button>
+                <button id="roleAutonomousBtn" type="button" title="Full autonomous Explorer + Coder + Gate loop" class="role-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40" data-role="autonomous">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                  <span>Autonomous</span>
+                </button>
+                <button id="roleVerifyBtn" type="button" title="Controlled connection verification (Single request, no fallback)" class="role-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40" data-role="verify">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 14 14"></polyline>
+                  </svg>
+                  <span>Verify</span>
                 </button>
               </div>
 
@@ -422,7 +457,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          <span class="font-bold text-sm text-zinc-100">Live Test Verification</span>
+          <div>
+            <span class="font-bold text-sm text-zinc-100 block">Deterministic Guardrail Policy Suite</span>
+            <span class="text-[10px] text-zinc-400 font-mono">In-memory policy validation (arbitrary shell execution disabled for RCE defense)</span>
+          </div>
         </div>
         <button id="closeTestModalBtn" class="p-1 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -432,11 +470,64 @@
         </button>
       </div>
       <div id="testResultsList" class="flex-1 overflow-y-auto p-4 space-y-2 text-xs font-mono">
-        <div class="text-zinc-500 text-center py-4">Running tests against Stage 2 guardrails...</div>
+        <div class="text-zinc-500 text-center py-4">Validating workspace policies and security invariants...</div>
       </div>
       <div class="p-3 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between text-xs">
         <span id="testSummaryText" class="text-zinc-400 font-mono text-[11px]"></span>
         <button id="reRunTestsBtn" class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold text-xs transition-colors">Re-run</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owner Access Token Authentication Modal -->
+  <div id="authModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden p-5 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-zinc-100">Owner Access Gate</h3>
+            <p class="text-[11px] text-zinc-400">Unlock live Otari inference sessions</p>
+          </div>
+        </div>
+        <button id="closeAuthModalBtn" class="p-1 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <p class="text-zinc-300 leading-relaxed">
+          Provide the server-side <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-amber-300 font-mono text-[11px]">WILDGUARD_ACCESS_TOKEN</code> to establish a cryptographically signed owner session.
+        </p>
+
+        <div class="space-y-1">
+          <label class="font-medium text-zinc-400 text-[11px]">Server Access Token</label>
+          <input id="authTokenInput" type="password" placeholder="Enter owner access token..." class="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-700 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-400 font-mono" />
+        </div>
+
+        <div id="authStatusBanner" class="p-2.5 rounded-xl text-[11px] font-mono hidden"></div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-zinc-800">
+        <button id="logoutBtn" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-colors hidden">
+          Log Out
+        </button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button id="cancelAuthBtn" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-colors">
+            Cancel
+          </button>
+          <button id="submitAuthBtn" type="button" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-colors">
+            Authenticate
+          </button>
+        </div>
       </div>
     </div>
   </div>

@@ -4,7 +4,7 @@
  */
 
 (function () {
-  let activeRole = 'autonomous'; // 'autonomous' | 'explorer' | 'coder'
+  let activeRole = 'workflow'; // 'workflow' | 'explorer' | 'coder' | 'autonomous' | 'verify'
   let isGenerating = false;
   let abortController = null;
   let systemStatus = null;
@@ -31,6 +31,20 @@
   const headerSpendText = document.getElementById('headerSpendText');
   const searchInput = document.getElementById('searchInput');
   const sessionList = document.getElementById('sessionList');
+
+  // Auth & Redis DOM elements
+  const authModalBtn = document.getElementById('authModalBtn');
+  const authModal = document.getElementById('authModal');
+  const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
+  const cancelAuthBtn = document.getElementById('cancelAuthBtn');
+  const submitAuthBtn = document.getElementById('submitAuthBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const authTokenInput = document.getElementById('authTokenInput');
+  const authStatusBanner = document.getElementById('authStatusBanner');
+  const authDot = document.getElementById('authDot');
+  const authStatusText = document.getElementById('authStatusText');
+  const redisDot = document.getElementById('redisDot');
+  const redisStatusText = document.getElementById('redisStatusText');
 
   // Modals
   const openRepoModalBtn = document.getElementById('openRepoModalBtn');
@@ -64,6 +78,10 @@
   // Initialize
   async function init() {
     setupEventListeners();
+    const activePill = document.querySelector('.role-pill.bg-zinc-800');
+    if (activePill && activePill.dataset && activePill.dataset.role) {
+      activeRole = activePill.dataset.role;
+    }
     await fetchStatus();
   }
 
@@ -84,12 +102,18 @@
     if (!systemStatus) return;
 
     // Telemetry and Mode
-    const isLive = systemStatus.config?.mode === 'live';
+    const isLive = systemStatus.config?.mode === 'live' && !systemStatus.preview;
+    const isPreview = Boolean(systemStatus.preview || systemStatus.isPublicPreview);
     if (sidebarModeBadge) {
-      sidebarModeBadge.textContent = isLive ? 'LIVE (OTARI)' : 'SIMULATION';
-      sidebarModeBadge.className = isLive
-        ? 'px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-        : 'px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      if (isPreview) {
+        sidebarModeBadge.textContent = 'SIMULATION (PREVIEW)';
+        sidebarModeBadge.className = 'px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+      } else {
+        sidebarModeBadge.textContent = isLive ? 'LIVE (OTARI)' : 'SIMULATION';
+        sidebarModeBadge.className = isLive
+          ? 'px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+          : 'px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      }
     }
 
     if (sidebarBranch && systemStatus.currentBranch) {
@@ -111,11 +135,49 @@
       }
     }
 
+    // Redis Persistent Budget Indicator
+    if (systemStatus.redis) {
+      if (systemStatus.redis.configured) {
+        if (redisDot) {
+          redisDot.className = systemStatus.redis.healthy
+            ? 'w-1.5 h-1.5 rounded-full bg-emerald-400'
+            : 'w-1.5 h-1.5 rounded-full bg-rose-400';
+        }
+        if (redisStatusText) {
+          redisStatusText.textContent = `Redis: $${systemStatus.redis.globalSpentUsd.toFixed(2)} / $${systemStatus.redis.globalCeilingUsd.toFixed(2)}`;
+        }
+      } else {
+        if (redisDot) redisDot.className = 'w-1.5 h-1.5 rounded-full bg-zinc-500';
+        if (redisStatusText) redisStatusText.textContent = 'Redis: Unconfigured';
+      }
+    }
+
+    // Ingress Authentication Indicator
+    const isOwner = Boolean(systemStatus.auth?.isOwner);
+    const isAuth = Boolean(systemStatus.auth?.authenticated);
+    if (authDot) {
+      authDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+    }
+    if (authStatusText) {
+      authStatusText.textContent = isOwner ? 'Owner Active' : 'Public Interactive';
+    }
+    if (logoutBtn) {
+      if (isOwner) {
+        logoutBtn.classList.remove('hidden');
+      } else {
+        logoutBtn.classList.add('hidden');
+      }
+    }
+
     if (activeModelBadge && systemStatus.models) {
-      if (activeRole === 'explorer') {
+      if (activeRole === 'workflow') {
+        activeModelBadge.textContent = `Step Loop (<10s): ${systemStatus.models.explorer} -> ${systemStatus.models.coder}`;
+      } else if (activeRole === 'explorer') {
         activeModelBadge.textContent = `Explorer: ${systemStatus.models.explorer}`;
       } else if (activeRole === 'coder') {
         activeModelBadge.textContent = `Coder: ${systemStatus.models.coder}`;
+      } else if (activeRole === 'verify') {
+        activeModelBadge.textContent = `Verify (Single Request, No Fallback): ${systemStatus.models.coder}`;
       } else {
         activeModelBadge.textContent = `Multi-Model: ${systemStatus.models.explorer}`;
       }
@@ -235,6 +297,67 @@
     runTestsBtn?.addEventListener('click', runTestSuiteModal);
     reRunTestsBtn?.addEventListener('click', executeTestSuite);
     closeTestModalBtn?.addEventListener('click', () => testModal?.classList.add('hidden'));
+
+    // Auth Gate modal
+    authModalBtn?.addEventListener('click', () => {
+      authModal?.classList.remove('hidden');
+      if (authTokenInput) authTokenInput.value = '';
+      if (authStatusBanner) authStatusBanner.classList.add('hidden');
+    });
+    closeAuthModalBtn?.addEventListener('click', () => authModal?.classList.add('hidden'));
+    cancelAuthBtn?.addEventListener('click', () => authModal?.classList.add('hidden'));
+
+    submitAuthBtn?.addEventListener('click', async () => {
+      const token = authTokenInput?.value?.trim();
+      if (!token) return;
+
+      submitAuthBtn.disabled = true;
+      submitAuthBtn.textContent = 'Verifying...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          if (authStatusBanner) {
+            authStatusBanner.textContent = 'Authenticated successfully!';
+            authStatusBanner.className = 'p-2.5 rounded-xl text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+            authStatusBanner.classList.remove('hidden');
+          }
+          await fetchStatus();
+          setTimeout(() => authModal?.classList.add('hidden'), 900);
+        } else {
+          if (authStatusBanner) {
+            authStatusBanner.textContent = data.error || 'Authentication failed.';
+            authStatusBanner.className = 'p-2.5 rounded-xl text-[11px] font-mono bg-rose-500/10 text-rose-400 border border-rose-500/20';
+            authStatusBanner.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (authStatusBanner) {
+          authStatusBanner.textContent = (err).message || 'Network error.';
+          authStatusBanner.className = 'p-2.5 rounded-xl text-[11px] font-mono bg-rose-500/10 text-rose-400 border border-rose-500/20';
+          authStatusBanner.classList.remove('hidden');
+        }
+      } finally {
+        submitAuthBtn.disabled = false;
+        submitAuthBtn.textContent = 'Authenticate';
+      }
+    });
+
+    logoutBtn?.addEventListener('click', async () => {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetchStatus();
+        authModal?.classList.add('hidden');
+      } catch (e) {
+        console.warn('Logout error:', e);
+      }
+    });
   }
 
   function handleInputResize() {
@@ -289,14 +412,24 @@
 
     abortController = new AbortController();
 
+    if (activeRole === 'workflow') {
+      await handleWorkflowExecution(task, pendingId);
+      return;
+    }
+
+    const requestPayload = {
+      task,
+      role: activeRole,
+    };
+    if (activeRole === 'verify') {
+      requestPayload.disableFallback = true;
+    }
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task,
-          role: activeRole,
-        }),
+        body: JSON.stringify(requestPayload),
         signal: abortController.signal,
       });
 
@@ -305,7 +438,20 @@
 
       if (!res.ok || !data.success) {
         if (pendingEl) {
-          pendingEl.innerHTML = renderErrorCard(data.error || 'Agent loop encountered an error.');
+          let errCategory = data.errorCategory;
+          if (!errCategory) {
+            if (data.code === 'VERCEL_HOBBY_TIMEOUT_PREVENTION') errCategory = 'hobby_timeout_prevention';
+            else if (res.status === 504) errCategory = 'timeout';
+            else if (res.status === 401) errCategory = 'authentication_failed';
+            else if (res.status === 402) errCategory = 'budget_exceeded';
+            else if (res.status === 429) errCategory = 'rate_limited';
+            else if (res.status === 400) errCategory = 'invalid_request';
+            else errCategory = 'gateway_error';
+          }
+          pendingEl.innerHTML = renderErrorCard(
+            data.error || 'Agent loop encountered an error.',
+            errCategory
+          );
         }
         return;
       }
@@ -331,7 +477,10 @@
         if ((err).name === 'AbortError') {
           pendingEl.innerHTML = renderCancelledCard();
         } else {
-          pendingEl.innerHTML = renderErrorCard((err).message || 'Network error communicating with WildGuard backend.');
+          pendingEl.innerHTML = renderErrorCard(
+            (err).message || 'Network error communicating with WildGuard backend.',
+            'network_error'
+          );
         }
       }
     } finally {
@@ -341,6 +490,216 @@
       await fetchStatus();
     }
   }
+
+  async function handleWorkflowExecution(task, pendingId) {
+    const pendingEl = document.getElementById(pendingId);
+    if (!pendingEl) return;
+
+    try {
+      // Step 0: Initialize
+      pendingEl.innerHTML = `
+        <div class="assistant-bubble flex-1 space-y-2">
+          <div class="flex items-center gap-2 text-xs text-emerald-400">
+            <span class="pulse-dot"></span>
+            <span class="font-medium">Step Loop: Initializing bounded workflow (<10s)...</span>
+          </div>
+          <div class="text-[11px] text-zinc-500 font-mono">
+            Creating run session; checking Redis budget reservation...
+          </div>
+        </div>
+      `;
+
+      const isLiveRequested = systemStatus?.config?.mode === 'live' && !systemStatus?.preview;
+      const initRes = await fetch('/api/workflow/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, mode: isLiveRequested ? 'live' : 'simulation' }),
+        signal: abortController?.signal,
+      });
+
+      const initData = await initRes.json();
+      if (!initRes.ok || !initData.success) {
+        pendingEl.innerHTML = renderErrorCard(
+          initData.error || 'Failed to initialize workflow',
+          initRes.status === 401 ? 'authentication_failed' : 'workflow_error'
+        );
+        return;
+      }
+
+      const runId = initData.workflow.runId;
+
+      // Step 1: Explorer Turn
+      pendingEl.innerHTML = `
+        <div class="assistant-bubble flex-1 space-y-2">
+          <div class="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-800 pb-1.5">
+            <span class="font-semibold text-amber-400 flex items-center gap-1.5">
+              <span class="pulse-dot"></span> Turn 1/3: Explorer Reconnaissance
+            </span>
+            <span class="font-mono text-[10px] text-zinc-500">Run: ${runId.slice(0, 15)}...</span>
+          </div>
+          <div class="text-[11px] text-zinc-400 font-mono">
+            Bounded turn executing within Hobby limit (<8.5s timeout)...
+          </div>
+        </div>
+      `;
+
+      const expRes = await fetch('/api/workflow/step/explorer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId }),
+        signal: abortController?.signal,
+      });
+
+      const expData = await expRes.json();
+      if (!expRes.ok || !expData.success) {
+        pendingEl.innerHTML = renderErrorCard(expData.error || 'Explorer turn failed', 'step_timeout');
+        return;
+      }
+
+      // Step 2: Coder Turn & In-Memory Patch
+      pendingEl.innerHTML = `
+        <div class="assistant-bubble flex-1 space-y-2">
+          <div class="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-800 pb-1.5">
+            <span class="font-semibold text-blue-400 flex items-center gap-1.5">
+              <span class="pulse-dot"></span> Turn 2/3: Coder Synthesis & Diff
+            </span>
+            <span class="font-mono text-[10px] text-emerald-400">Explorer OK (${expData.latencyMs}ms)</span>
+          </div>
+          <div class="text-[11px] text-zinc-400 font-mono">
+            Synthesizing patch and generating in-memory unified diff...
+          </div>
+        </div>
+      `;
+
+      const coderRes = await fetch('/api/workflow/step/coder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId }),
+        signal: abortController?.signal,
+      });
+
+      const coderData = await coderRes.json();
+      if (!coderRes.ok || !coderData.success) {
+        pendingEl.innerHTML = renderErrorCard(coderData.error || 'Coder turn failed', 'step_timeout');
+        return;
+      }
+
+      // Step 3: Render Diff & Human Approval
+      renderWorkflowApprovalUI(pendingEl, runId, expData, coderData);
+
+    } catch (err) {
+      if ((err).name === 'AbortError') {
+        pendingEl.innerHTML = renderCancelledCard();
+      } else {
+        pendingEl.innerHTML = renderErrorCard((err).message || 'Workflow step failed', 'network_error');
+      }
+    } finally {
+      isGenerating = false;
+      abortController = null;
+      updateSendButton();
+      await fetchStatus();
+    }
+  }
+
+  function renderWorkflowApprovalUI(pendingEl, runId, expData, coderData) {
+    const patch = coderData.patch;
+    const isLive = expData.mode === 'live' || coderData.mode === 'live';
+    const totalCost = (expData.costUsd || 0) + (coderData.costUsd || 0);
+
+    pendingEl.innerHTML = `
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-emerald-400 flex items-center justify-center font-bold text-zinc-950 text-xs shadow-md shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <div class="assistant-bubble flex-1 space-y-3">
+        <div class="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-800 pb-1.5">
+          <span class="font-mono text-zinc-300">WORKFLOW COMPLETE (Turn 1: ${expData.latencyMs}ms | Turn 2: ${coderData.latencyMs}ms)</span>
+          <span class="font-mono text-[10px] text-amber-400">Total Spend: $${totalCost.toFixed(6)} | Mode: ${isLive ? 'LIVE' : 'SIMULATION'}</span>
+        </div>
+
+        <!-- Explorer Output Accordion -->
+        <details class="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs">
+          <summary class="font-medium text-amber-400 cursor-pointer select-none">
+            Turn 1: Explorer Summary (${expData.modelUsed})
+          </summary>
+          <div class="mt-2 text-zinc-300 leading-relaxed whitespace-pre-wrap font-mono text-[11px]">
+            ${escapeHtml(expData.output || '')}
+          </div>
+        </details>
+
+        <!-- Patch Diff Preview -->
+        ${patch ? `
+          <div class="diff-card space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-zinc-200 text-xs font-semibold flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                ${escapeHtml(patch.filePath)}
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                AWAITING HUMAN APPROVAL
+              </span>
+            </div>
+            <pre class="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 font-mono text-[11px] overflow-x-auto text-zinc-300"><code>${escapeHtml(patch.previewDiff || '')}</code></pre>
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-[11px] text-zinc-500">In-memory diff ready. Serverless filesystem untouched.</span>
+              <div class="flex items-center gap-2">
+                <a href="/api/patch/download?runId=${encodeURIComponent(runId)}" download="wildguard-${escapeHtml(runId)}.patch" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono transition-colors flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Download .patch
+                </a>
+                <button onclick="window.approveWorkflow('${escapeHtml(runId)}', false, this)" class="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-colors">
+                  Reject
+                </button>
+                <button onclick="window.approveWorkflow('${escapeHtml(runId)}', true, this)" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-zinc-950 text-xs font-bold transition-colors">
+                  Approve Patch
+                </button>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div class="text-xs text-zinc-400 italic">No patch generated for this task.</div>
+        `}
+      </div>
+    `;
+
+    chatFeed?.scrollTo({ top: chatFeed.scrollHeight, behavior: 'smooth' });
+  }
+
+  // Global window functions for inline button onclick handlers
+  window.approveWorkflow = async function (runId, isApproved, btnEl) {
+    if (!btnEl) return;
+    const parentContainer = btnEl.closest('.diff-card');
+    btnEl.disabled = true;
+
+    try {
+      const res = await fetch('/api/workflow/step/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId, isApproved }),
+      });
+      const data = await res.json();
+
+      if (parentContainer) {
+        parentContainer.innerHTML = `
+          <div class="p-3 rounded-xl ${isApproved ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'} text-xs space-y-1">
+            <div class="font-bold">${isApproved ? 'Patch Approved by Operator' : 'Patch Rejected'}</div>
+            <p class="text-zinc-400 text-[11px]">${data.output || ''}</p>
+            ${isApproved ? `
+              <div class="pt-2">
+                <a href="/api/patch/download?runId=${encodeURIComponent(runId)}" download="wildguard-${encodeURIComponent(runId)}.patch" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Download .patch File
+                </a>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+    } catch (e) {
+      alert(`Approval error: ${e.message}`);
+    }
+  };
 
   function appendUserMessage(text) {
     const el = document.createElement('div');
@@ -506,6 +865,90 @@
   }
 
   function renderSingleTurnResponse(data) {
+    if (data.phase === 'verify') {
+      const isVerified = Boolean(data.verified);
+      const isSimulation = data.mode === 'simulation';
+      const isEmpty = data.verificationStatus === 'empty_content';
+      const isMatch = data.verificationStatus === 'matched';
+
+      let statusBadgeText = 'UNCONFIRMED';
+      let badgeClass = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      let iconBg = 'from-amber-500 to-amber-400';
+      let headline = 'Verification Unconfirmed (Empty Content)';
+      let details = 'Gateway transport succeeded (HTTP 200), but message.content was empty. No passphrase matched.';
+
+      if (isSimulation) {
+        statusBadgeText = 'SIMULATION';
+        badgeClass = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        iconBg = 'from-blue-500 to-blue-400';
+        headline = 'Simulation Verification Mode';
+        details = data.message || 'Simulation mode active. Zero external calls performed.';
+      } else if (isVerified) {
+        statusBadgeText = 'VERIFIED';
+        badgeClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        iconBg = 'from-emerald-500 to-emerald-400';
+        headline = 'Connection Verified (Passphrase Matched: OTARI_CONNECTION_OK)';
+        details = 'Outbound probe succeeded (HTTP 200) and response content strictly verified the expected token sequence.';
+      } else if (!isEmpty) {
+        statusBadgeText = 'MISMATCH';
+        badgeClass = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        iconBg = 'from-rose-500 to-rose-400';
+        headline = 'Verification Failed (Passphrase Mismatch)';
+        details = 'Upstream gateway returned HTTP 200, but message.content did not contain "OTARI_CONNECTION_OK".';
+      }
+
+      return `
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr ${iconBg} flex items-center justify-center font-bold text-zinc-950 text-xs shadow-md shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="assistant-bubble flex-1 space-y-2">
+          <div class="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-800 pb-1.5">
+            <span class="font-mono text-zinc-300">VERIFY : ${escapeHtml(data.modelUsed || 'Otari Gateway')}</span>
+            <span class="font-mono text-[10px]">Tokens: ${data.usage?.totalTokens || 0} (Prompt: ${data.usage?.promptTokens || 0}, Comp: ${data.usage?.completionTokens || 0}) | Cost: $${(data.usage?.costUsd || 0).toFixed(6)}</span>
+          </div>
+
+          <!-- Explicit Verification Status Card -->
+          <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3 text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-zinc-200">Otari Connection Probe</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold ${badgeClass}">
+                ${statusBadgeText}
+              </span>
+            </div>
+            <div class="text-[11px] font-medium ${isVerified ? 'text-emerald-400' : (isSimulation ? 'text-blue-400' : 'text-amber-400')}">
+              ${escapeHtml(headline)}
+            </div>
+            <p class="text-zinc-400 text-[11px] leading-relaxed">
+              ${escapeHtml(details)}
+            </p>
+            <div class="flex items-center gap-3 text-[10px] text-zinc-500 font-mono pt-1 border-t border-zinc-800/60">
+              <span>Transport: <b class="text-emerald-400">HTTP 200 OK</b></span>
+              <span>Tokens Limit: <b class="text-zinc-300">${data.maxTokens || 100}</b></span>
+              <span>Fallback: <b class="text-zinc-300">${data.fallbackTriggered ? 'TRIGGERED' : 'DISABLED'}</b></span>
+              <span>Attempts: <b class="text-zinc-300">${data.attemptCount || 1}</b></span>
+            </div>
+          </div>
+
+          <div class="markdown-content text-sm text-zinc-200 leading-relaxed pt-1">
+            ${data.response ? formatMarkdown(data.response) : '<span class="text-zinc-500 italic font-mono text-xs">[Empty content response received from gateway]</span>'}
+          </div>
+
+          <div class="flex items-center gap-3 pt-2 text-xs text-zinc-500 border-t border-zinc-800/60">
+            <button onclick="window.copyResponseText(this)" class="hover:text-zinc-300 transition-colors flex items-center gap-1 cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy response</span>
+            </button>
+            <button onclick="window.retryLastPrompt()" class="hover:text-zinc-300 transition-colors flex items-center gap-1 cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>
+              <span>Retry</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     return `
       <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center font-bold text-zinc-950 text-xs shadow-md shadow-amber-500/10 shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -518,7 +961,12 @@
           <span class="font-mono text-[10px]">Tokens: ${data.usage?.totalTokens || 0} | Cost: $${(data.usage?.costUsd || 0).toFixed(6)}</span>
         </div>
         <div class="markdown-content text-sm text-zinc-200 leading-relaxed pt-1">
-          ${formatMarkdown(data.response)}
+          ${(data.response && data.response.trim().length > 0)
+            ? formatMarkdown(data.response)
+            : `<div class="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs text-amber-300 font-mono">
+                 [Gateway returned HTTP 200 OK, but final content was empty. The reasoning model may have exhausted its completion token limit during internal chain-of-thought before emitting text.]
+               </div>`
+          }
         </div>
         <div class="flex items-center gap-3 pt-2 text-xs text-zinc-500 border-t border-zinc-800/60">
           <button onclick="window.copyResponseText(this)" class="hover:text-zinc-300 transition-colors flex items-center gap-1 cursor-pointer">
@@ -534,15 +982,39 @@
     `;
   }
 
-  function renderErrorCard(errMsg) {
+  function renderErrorCard(errMsg, errorCategory) {
+    const categoryLabels = {
+      timeout: 'Timeout (Otari Gateway Request Exceeded Deadline)',
+      authentication_failed: 'Authentication Failed (Check Otari-Key / Credentials)',
+      invalid_model: 'Invalid Model Identifier (Model Not In Otari Catalog)',
+      gateway_error: 'Otari Gateway Error (Upstream Service Failure)',
+      network_error: 'Network Connectivity Error',
+      hobby_timeout_prevention: 'Hobby Execution Limit Notice (Use Step Loop or Single Turns)',
+      budget_exceeded: 'Spend Budget Cap Reached',
+      rate_limited: 'Rate Limit Exceeded',
+      invalid_request: 'Invalid Request',
+    };
+    const categoryBadge = errorCategory ? `
+      <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 uppercase">
+        ${escapeHtml(errorCategory.replace('_', ' '))}
+      </span>
+    ` : '';
+    const categoryTitle = categoryLabels[errorCategory] || 'Execution Error';
+
     return `
       <div class="w-8 h-8 rounded-xl bg-rose-500 flex items-center justify-center font-bold text-zinc-950 text-xs shadow-md shrink-0">
         !
       </div>
-      <div class="assistant-bubble flex-1 space-y-1">
-        <div class="text-xs font-bold text-rose-400">Execution Error</div>
-        <p class="text-xs text-zinc-300 font-mono">${escapeHtml(errMsg)}</p>
-        <div class="pt-2">
+      <div class="assistant-bubble flex-1 space-y-2">
+        <div class="flex items-center justify-between border-b border-rose-500/20 pb-1.5">
+          <span class="text-xs font-bold text-rose-400">${escapeHtml(categoryTitle)}</span>
+          ${categoryBadge}
+        </div>
+        <p class="text-xs text-zinc-300 font-mono leading-relaxed">${escapeHtml(errMsg)}</p>
+        <div class="text-[10px] text-zinc-500 font-mono pt-0.5">
+          Zero simulated fallbacks applied. Actual failure displayed truthfully.
+        </div>
+        <div class="pt-1">
           <button onclick="window.retryLastPrompt()" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-colors cursor-pointer">Retry</button>
         </div>
       </div>
@@ -699,8 +1171,11 @@
       const data = await res.json();
 
       if (res.ok && data.success) {
-        testSummaryText.textContent = `${data.passed}/${data.totalTests} tests passed (${data.durationMs}ms)`;
-        testResultsList.innerHTML = data.tests.map(t => `
+        testSummaryText.textContent = `${data.passed}/${data.totalTests} policies verified (${data.durationMs}ms)`;
+        const noticeHtml = data.notice
+          ? `<div class="p-2 mb-2 rounded bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300 font-mono">${escapeHtml(data.notice)}</div>`
+          : '';
+        testResultsList.innerHTML = noticeHtml + data.tests.map(t => `
           <div class="flex items-center justify-between p-2 rounded bg-zinc-950/70 border border-zinc-800">
             <div class="flex items-center gap-2">
               <span class="w-2 h-2 rounded-full ${t.status === 'pass' ? 'bg-emerald-400' : 'bg-rose-500'}"></span>
@@ -748,15 +1223,18 @@
 
       if (banner) {
         if (data.success) {
+          const isDryRun = Boolean(data.data?.dryRun || data.dryRun);
+          const notice = data.data?.notice || data.notice;
           banner.className = 'rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3.5 my-3 space-y-1';
           banner.innerHTML = `
             <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              Patch Successfully Applied & Verified
+              ${isDryRun ? 'Patch Successfully Verified & Simulated' : 'Patch Successfully Applied & Verified'}
             </div>
             <p class="text-xs text-zinc-300 font-mono">Modified: ${escapeHtml(pendingPatchData.filePath)} (${data.data?.linesModified || 0} lines)</p>
+            ${notice ? `<p class="text-[11px] text-amber-300 font-mono pt-1">${escapeHtml(notice)}</p>` : ''}
           `;
         } else {
           banner.className = 'rounded-xl bg-rose-500/10 border border-rose-500/30 p-3.5 my-3 space-y-1';

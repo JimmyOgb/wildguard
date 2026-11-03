@@ -51,7 +51,9 @@ export class AgentLoop {
     this.tools = tools;
     this.decisionGate = decisionGate;
     this.telemetry = telemetry;
-    this.runId = telemetry.getRunId();
+    this.runId = telemetry && typeof telemetry.getRunId === 'function'
+      ? telemetry.getRunId()
+      : `run_${Math.random().toString(36).substring(2, 9)}`;
   }
 
   public getRunId(): string {

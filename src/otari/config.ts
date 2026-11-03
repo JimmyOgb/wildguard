@@ -3,6 +3,8 @@
  * Manages runtime configuration, model routing roles, timeouts, and budget caps.
  */
 
+import * as fs from 'node:fs';
+
 export type ExecutionMode = 'simulation' | 'live';
 
 export interface ModelRolesConfig {
@@ -16,8 +18,12 @@ export interface WildGuardConfig {
   baseUrl: string;
   mode: ExecutionMode;
   maxRunCostUsd: number;
+  globalBudgetCeilingUsd: number;
   timeoutMs: number;
   models: ModelRolesConfig;
+  accessToken?: string;
+  upstashRedisUrl?: string;
+  upstashRedisToken?: string;
 }
 
 export const DEFAULT_CONFIG = {
@@ -27,6 +33,7 @@ export const DEFAULT_CONFIG = {
   FALLBACK_MODEL: 'meta-llama/llama-3.3-70b-instruct',
   DEFAULT_MODE: 'simulation' as ExecutionMode,
   DEFAULT_MAX_RUN_COST_USD: 1.50,
+  DEFAULT_GLOBAL_BUDGET_CEILING_USD: 10.00,
   DEFAULT_TIMEOUT_MS: 30000,
 } as const;
 
@@ -78,11 +85,44 @@ export function validateBaseUrl(url: string): string {
  * Fails safe to simulation mode if live credentials or live flag are not explicitly set.
  */
 export function loadConfig(env: Record<string, string | undefined> = process.env): WildGuardConfig {
-  const rawApiKey = env.OTARI_API_KEY?.trim();
-  const rawBaseUrl = env.OTARI_BASE_URL?.trim() || DEFAULT_CONFIG.BASE_URL;
+  let resolvedEnv = env;
+  if (env === process.env && !env.OTARI_API_KEY && fs.existsSync('.env')) {
+    try {
+      const dotenvContent = fs.readFileSync('.env', 'utf8');
+      const parsed: Record<string, string> = {};
+      for (const line of dotenvContent.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx !== -1) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          const val = trimmed.slice(eqIdx + 1).trim();
+          parsed[key] = val;
+        }
+      }
+      resolvedEnv = { ...parsed, ...env };
+    } catch {
+      // Fallback cleanly if .env cannot be read
+    }
+  }
+
+  const cleanEnvValue = (val?: string): string | undefined => {
+    if (!val) return undefined;
+    let s = val.trim();
+    const eqIdx = s.indexOf('=');
+    if (eqIdx !== -1 && !s.startsWith('http://') && !s.startsWith('https://')) {
+      s = s.slice(eqIdx + 1).trim();
+    }
+    s = s.replace(/^[\\"'`]+|[\\"'`]+$/g, '').trim();
+    if (s.startsWith('Bearer ')) s = s.slice(7).trim();
+    return s || undefined;
+  };
+
+  const rawApiKey = cleanEnvValue(resolvedEnv.OTARI_API_KEY);
+  const rawBaseUrl = cleanEnvValue(resolvedEnv.OTARI_BASE_URL) || DEFAULT_CONFIG.BASE_URL;
   const baseUrl = validateBaseUrl(rawBaseUrl);
 
-  const rawMode = env.WILDGUARD_MODE?.toLowerCase().trim();
+  const rawMode = cleanEnvValue(resolvedEnv.WILDGUARD_MODE)?.toLowerCase();
   
   // Rule: WILDGUARD_MODE must default to simulation unless live credentials
   // and explicit live-mode configuration are BOTH present.
@@ -97,41 +137,54 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   }
 
   // Budget validation (defaults to 1.50 USD per run)
-  const maxRunCostUsd = env.WILDGUARD_MAX_RUN_COST_USD
-    ? validateBudget(env.WILDGUARD_MAX_RUN_COST_USD)
+  const maxRunCostUsd = resolvedEnv.WILDGUARD_MAX_RUN_COST_USD
+    ? validateBudget(resolvedEnv.WILDGUARD_MAX_RUN_COST_USD)
     : DEFAULT_CONFIG.DEFAULT_MAX_RUN_COST_USD;
 
+  // Global budget ceiling (defaults to 10.00 USD)
+  const globalBudgetCeilingUsd = resolvedEnv.WILDGUARD_GLOBAL_BUDGET_CEILING_USD
+    ? validateBudget(resolvedEnv.WILDGUARD_GLOBAL_BUDGET_CEILING_USD)
+    : DEFAULT_CONFIG.DEFAULT_GLOBAL_BUDGET_CEILING_USD;
+
   // Timeout validation
-  const timeoutMs = env.OTARI_TIMEOUT_MS
-    ? validateTimeout(env.OTARI_TIMEOUT_MS)
+  const timeoutMs = resolvedEnv.OTARI_TIMEOUT_MS
+    ? validateTimeout(resolvedEnv.OTARI_TIMEOUT_MS)
     : DEFAULT_CONFIG.DEFAULT_TIMEOUT_MS;
 
   // Models configuration
-  const explorer = env.OTARI_EXPLORER_MODEL !== undefined
-    ? env.OTARI_EXPLORER_MODEL.trim()
+  const explorer = resolvedEnv.OTARI_EXPLORER_MODEL !== undefined
+    ? (cleanEnvValue(resolvedEnv.OTARI_EXPLORER_MODEL) ?? '')
     : DEFAULT_CONFIG.EXPLORER_MODEL;
-  const coder = env.OTARI_CODER_MODEL !== undefined
-    ? env.OTARI_CODER_MODEL.trim()
+  const coder = resolvedEnv.OTARI_CODER_MODEL !== undefined
+    ? (cleanEnvValue(resolvedEnv.OTARI_CODER_MODEL) ?? '')
     : DEFAULT_CONFIG.CODER_MODEL;
-  const fallback = env.OTARI_FALLBACK_MODEL !== undefined
-    ? env.OTARI_FALLBACK_MODEL.trim()
+  const fallback = resolvedEnv.OTARI_FALLBACK_MODEL !== undefined
+    ? (cleanEnvValue(resolvedEnv.OTARI_FALLBACK_MODEL) ?? '')
     : DEFAULT_CONFIG.FALLBACK_MODEL;
 
   if (!explorer || !coder || !fallback) {
     throw new Error('All model roles (explorer, coder, fallback) must have valid non-empty identifiers.');
   }
 
+  const rawAccessToken = cleanEnvValue(resolvedEnv.WILDGUARD_ACCESS_TOKEN);
+  const rawRedisUrl = cleanEnvValue(resolvedEnv.UPSTASH_REDIS_REST_URL);
+  const rawRedisToken = cleanEnvValue(resolvedEnv.UPSTASH_REDIS_REST_TOKEN);
+
   return {
     apiKey: rawApiKey || undefined,
     baseUrl,
     mode,
     maxRunCostUsd,
+    globalBudgetCeilingUsd,
     timeoutMs,
     models: {
       explorer,
       coder,
       fallback,
     },
+    accessToken: rawAccessToken || undefined,
+    upstashRedisUrl: rawRedisUrl || undefined,
+    upstashRedisToken: rawRedisToken || undefined,
   };
 }
 
@@ -144,8 +197,25 @@ export function sanitizeConfig(config: WildGuardConfig): Record<string, unknown>
     baseUrl: config.baseUrl,
     mode: config.mode,
     maxRunCostUsd: config.maxRunCostUsd,
+    globalBudgetCeilingUsd: config.globalBudgetCeilingUsd,
     timeoutMs: config.timeoutMs,
     models: { ...config.models },
     hasApiKey: Boolean(config.apiKey && config.apiKey.length > 0),
+    hasAccessToken: Boolean(config.accessToken && config.accessToken.length > 0),
+    hasRedisConfig: Boolean(config.upstashRedisUrl && config.upstashRedisToken),
+  };
+}
+
+/**
+ * Returns public configuration status reporting only safe booleans
+ */
+export function getPublicConfigStatus(config: WildGuardConfig): Record<string, boolean | string | number> {
+  return {
+    mode: config.mode,
+    hasApiKey: Boolean(config.apiKey && config.apiKey.length > 0),
+    hasAccessToken: Boolean(config.accessToken && config.accessToken.length > 0),
+    hasRedisConfig: Boolean(config.upstashRedisUrl && config.upstashRedisToken),
+    maxRunCostUsd: config.maxRunCostUsd,
+    globalBudgetCeilingUsd: config.globalBudgetCeilingUsd,
   };
 }

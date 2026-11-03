@@ -5,6 +5,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import {
   validatePathContainment,
   validateFileReadPolicy,
@@ -35,6 +36,12 @@ export interface PatchResult {
   bytesWritten: number;
   linesModified: number;
   previewDiff: string;
+  dryRun?: boolean;
+  notice?: string;
+}
+
+export interface McpRepoToolsOptions {
+  readOnly?: boolean;
 }
 
 export const MAX_FILE_SIZE_BYTES = 1024 * 1024; // 1 MB limit for safe reads
@@ -42,10 +49,27 @@ export const MAX_FILE_SIZE_BYTES = 1024 * 1024; // 1 MB limit for safe reads
 export class McpRepoTools {
   private readonly repoRoot: string;
   private currentBranch: string;
+  private isReadOnly: boolean;
 
-  constructor(repoRoot: string, currentBranch = 'feat/otari-agent-harness') {
+  constructor(repoRoot: string, currentBranch = 'feat/otari-agent-harness', options?: McpRepoToolsOptions) {
     this.repoRoot = path.resolve(repoRoot);
     this.currentBranch = currentBranch;
+    this.isReadOnly = Boolean(options?.readOnly);
+  }
+
+  public isReadOnlyMode(): boolean {
+    if (this.isReadOnly) return true;
+    if (process.env.VERCEL === '1') {
+      // In Vercel serverless containers, allow writes only within isolated /tmp demo workspaces
+      const normalizedRoot = path.resolve(this.repoRoot);
+      const normalizedTmp = path.resolve(os.tmpdir());
+      return !normalizedRoot.startsWith(normalizedTmp);
+    }
+    return false;
+  }
+
+  public setReadOnly(readOnly: boolean): void {
+    this.isReadOnly = readOnly;
   }
 
   public getCurrentBranch(): string {
@@ -263,12 +287,29 @@ export class McpRepoTools {
     try {
       const oldContent = fs.existsSync(resolved) ? fs.readFileSync(resolved, 'utf-8') : '';
       const preview = this.createSimpleDiff(oldContent, newContent, filePath);
+      const lines = newContent.split('\n').length;
+
+      // Read-only / dry-run defense (e.g. Vercel public preview or explicit readOnly mode)
+      if (this.isReadOnlyMode()) {
+        return {
+          success: true,
+          toolName: 'mcp_repo_apply_patch',
+          data: {
+            filePath,
+            bytesWritten: Buffer.byteLength(newContent, 'utf-8'),
+            linesModified: lines,
+            previewDiff: preview,
+            dryRun: true,
+            notice: 'Public preview dry-run: patch verified against guardrails; disk write skipped (read-only environment).'
+          },
+          policyResult: policy,
+        };
+      }
 
       // Ensure directory exists
       fs.mkdirSync(path.dirname(resolved), { recursive: true });
       fs.writeFileSync(resolved, newContent, 'utf-8');
 
-      const lines = newContent.split('\n').length;
       return {
         success: true,
         toolName: 'mcp_repo_apply_patch',
@@ -315,6 +356,37 @@ export class McpRepoTools {
       data: {
         branch: this.currentBranch,
         previousBranch,
+      },
+      policyResult: policy,
+    };
+  }
+
+  /**
+   * Generates in-memory unified diff without writing to disk
+   */
+  public generateUnifiedDiff(filePath: string, newContent: string): ToolResult<{ diff: string; linesModified: number }> {
+    const policy = validateWritePolicy(this.repoRoot, filePath, this.currentBranch);
+    if (policy.status === 'blocked') {
+      return {
+        success: false,
+        toolName: 'mcp_repo_generate_diff',
+        error: policy.message,
+        reasonCode: policy.reasonCode,
+        policyResult: policy,
+      };
+    }
+
+    const resolved = path.resolve(this.repoRoot, filePath);
+    const oldContent = fs.existsSync(resolved) ? fs.readFileSync(resolved, 'utf-8') : '';
+    const diff = this.createSimpleDiff(oldContent, newContent, filePath);
+    const linesModified = newContent ? newContent.split('\n').length : 0;
+
+    return {
+      success: true,
+      toolName: 'mcp_repo_generate_diff',
+      data: {
+        diff,
+        linesModified,
       },
       policyResult: policy,
     };
