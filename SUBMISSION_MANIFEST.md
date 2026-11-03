@@ -17,8 +17,8 @@
 | **First Otari Introduction Commit** | The FIRST commit on `feat/otari-agent-harness` must introduce Otari integration | **VERIFIED** | Commit `c23a50930fd646b86fbebe02e80286976cd3e76b` introduced the complete Otari integration, security harness, web workspace, test suite, and judge documentation |
 | **Verified Commit Permalink** | Direct GitHub permalink to the introduction commit | **VERIFIED** | [`c23a509` Commit Permalink](https://github.com/JimmyOgb/wildguard/commit/c23a50930fd646b86fbebe02e80286976cd3e76b) |
 | **Audited Deployment HEAD** | Verified feature branch commit HEAD | **VERIFIED** | `125bede364e5c738543db6c8db97e52cdfdf2082` |
-| **Live Audited Preview Deployment** | Publicly accessible preview URL without login | **VERIFIED** | [https://wildguard-3331kv7fe-jamism123.vercel.app](https://wildguard-3331kv7fe-jamism123.vercel.app) |
-| **Vercel Deployment ID** | Active audited deployment ID | **VERIFIED** | `dpl_A5Yjxhw6WxJvAhLDpcqJ73JDAUg2` |
+| **Live Audited Preview Deployment** | Publicly accessible preview URL without login | **VERIFIED** | [https://wildguard-acuv19bqm-jamism123.vercel.app](https://wildguard-acuv19bqm-jamism123.vercel.app) |
+| **Vercel Deployment ID** | Active audited deployment ID | **VERIFIED** | `dpl_FYgh87qyeMT22vZ5rnht4L7BAqzE` |
 | **Published README Permalink** | Direct GitHub permalink to judge-ready README | **VERIFIED** | [`README.md` Permalink](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/README.md) |
 | **Developer Experience Feedback** | Formal responses to Otari questions | **VERIFIED** | [`OTARI_DX_FEEDBACK.md`](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/OTARI_DX_FEEDBACK.md) |
 | **Demonstration Video File** | 1080p 30fps MP4 walkthrough in repo root | **VERIFIED** | [`wildguard_hackathon_demo.mp4`](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/wildguard_hackathon_demo.mp4) (3m 57s, 6.05 MB) |
@@ -133,7 +133,7 @@ This storyboard defines the exact sequence for the hackathon demonstration video
 - [x] **Public GitHub Repository Verified:** `https://github.com/JimmyOgb/wildguard`
 - [x] **Feature Branch Pinned:** `feat/otari-agent-harness` (Commit: `26f66e9d84029914e59191585342e554e8cd4123`)
 - [x] **First Otari Integration Commit Linked:** `c23a50930fd646b86fbebe02e80286976cd3e76b`
-- [x] **Live Public Preview Verified:** `https://wildguard-3331kv7fe-jamism123.vercel.app` (Deployment ID: `dpl_A5Yjxhw6WxJvAhLDpcqJ73JDAUg2`)
+- [x] **Live Public Preview Verified:** `https://wildguard-acuv19bqm-jamism123.vercel.app` (Deployment ID: `dpl_FYgh87qyeMT22vZ5rnht4L7BAqzE`)
 - [x] **Zero-Login Public Interactive Access Verified:** `auth.mode: "public_interactive"`
 - [x] **Stage 4.23 Live Evidence Truthful Disclosure:** `LIVE_GATEWAY_ACCEPTED_CONTENT_MISMATCH`
 - [x] **README Evaluator Guide Published:** Section "How to Test (Judge & Evaluator Guide)"
