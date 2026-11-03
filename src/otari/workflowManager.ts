@@ -87,7 +87,7 @@ export class WorkflowManager {
     this.engine = options.engine;
     this.budgetManager = options.budgetManager;
     this.tools = options.tools;
-    this.stepTimeoutMs = options.stepTimeoutMs || 7500; // 7.5s Hobby timeout with 2.5s safety margin
+    this.stepTimeoutMs = options.stepTimeoutMs || 25000; // 25s bounded gateway execution window
   }
 
   /**
@@ -271,13 +271,13 @@ export class WorkflowManager {
           messages: [
             {
               role: 'system',
-              content: `You are the WildGuard Explorer. Read task, inspect workspace files [${fileNames}], plan steps. Output succinct exploration summary.`,
+              content: `You are the WildGuard Explorer. Read task, inspect workspace files [${fileNames}], and plan steps. Be succinct and direct. Output a concise exploration plan in 3-5 bullet points without lengthy preamble.`,
             },
             { role: 'user', content: record.userTask },
           ],
           timeoutMs: this.stepTimeoutMs,
           signal: controller.signal,
-          disableFallback: true, // Disable fallback for bounded Hobby turns
+          disableFallback: true, // Disable fallback for bounded workflow turns
         });
       } finally {
         clearTimeout(timer);
@@ -294,6 +294,12 @@ export class WorkflowManager {
           actualUsd: costUsd,
           status: 'settled',
         });
+      }
+
+      // Check if content was empty due to reasoning exhaustion
+      const trimmedExplorerContent = (response.content || '').trim();
+      if (!trimmedExplorerContent && response.reasoningDiagnostic) {
+        throw new Error('Explorer reasoning model exhausted token allowance during internal thinking before emitting text.');
       }
 
       record.explorerOutput = response.content;
@@ -322,7 +328,7 @@ export class WorkflowManager {
     } catch (err) {
       const isTimeout = (err as Error).name === 'AbortError' || (err as Error).message.includes('timeout') || (err as any).isTimeout;
       const errMessage = isTimeout
-        ? `Explorer step timed out after ${this.stepTimeoutMs}ms (Hobby execution limit).`
+        ? `Explorer step timed out after ${this.stepTimeoutMs}ms (Gateway execution deadline).`
         : `Explorer step failed: ${(err as Error).message}`;
 
       // In live mode with timeout, charge is uncertain (do not refund gateway)
@@ -426,15 +432,15 @@ export class WorkflowManager {
           messages: [
             {
               role: 'system',
-              content: `You are the WildGuard Coder. Implement safe, minimal fix based on exploration. Target file: ${targetFilePath}. Current source:\n\`\`\`typescript\n${currentContent}\n\`\`\`\nReturn replacement source code.`,
+              content: `You are the WildGuard Coder. Implement safe, minimal fix based on exploration. Target file: ${targetFilePath}. Current source:\n\`\`\`typescript\n${currentContent}\n\`\`\`\nBe direct and concise. Return the complete replacement source code for ${targetFilePath} without conversational preamble or markdown code fences.`,
             },
             { role: 'user', content: `Task: ${record.userTask}\n\nExplorer Plan:\n${record.explorerOutput || 'Direct implementation'}` },
           ],
           temperature: 0,
-          maxTokens: 400,
+          maxTokens: 1024,
           timeoutMs: this.stepTimeoutMs,
           signal: controller.signal,
-          disableFallback: true, // Disable fallback for bounded Hobby turns
+          disableFallback: true, // Disable fallback for bounded workflow turns
         });
       } finally {
         clearTimeout(timer);
@@ -450,6 +456,12 @@ export class WorkflowManager {
           actualUsd: costUsd,
           status: 'settled',
         });
+      }
+
+      // Check if content was empty due to reasoning exhaustion
+      const trimmedCoderContent = (response.content || '').trim();
+      if (!trimmedCoderContent && response.reasoningDiagnostic) {
+        throw new Error('Coder reasoning model exhausted token allowance during internal thinking before emitting code.');
       }
 
       record.coderOutput = response.content;
@@ -488,7 +500,7 @@ export class WorkflowManager {
     } catch (err) {
       const isTimeout = (err as Error).name === 'AbortError' || (err as Error).message.includes('timeout') || (err as any).isTimeout;
       const errMessage = isTimeout
-        ? `Coder step timed out after ${this.stepTimeoutMs}ms (Hobby execution limit).`
+        ? `Coder step timed out after ${this.stepTimeoutMs}ms (Gateway execution deadline).`
         : `Coder step failed: ${(err as Error).message}`;
 
       if (isLive && reservationId) {

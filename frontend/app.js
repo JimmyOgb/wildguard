@@ -529,6 +529,14 @@
       const runId = initData.workflow.runId;
 
       // Step 1: Explorer Turn
+      let expElapsed = 0;
+      const updateExplorerStatus = () => {
+        const textEl = pendingEl.querySelector('#step-explorer-status');
+        if (textEl) {
+          textEl.textContent = `Bounded turn executing (<25s timeout) — Elapsed: ${expElapsed}s... Waiting for Otari gateway...`;
+        }
+      };
+
       pendingEl.innerHTML = `
         <div class="assistant-bubble flex-1 space-y-2">
           <div class="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-800 pb-1.5">
@@ -537,26 +545,44 @@
             </span>
             <span class="font-mono text-[10px] text-zinc-500">Run: ${runId.slice(0, 15)}...</span>
           </div>
-          <div class="text-[11px] text-zinc-400 font-mono">
-            Bounded turn executing within Hobby limit (<8.5s timeout)...
+          <div id="step-explorer-status" class="text-[11px] text-zinc-400 font-mono">
+            Bounded turn executing (<25s timeout) — Elapsed: 0s... Waiting for Otari gateway...
           </div>
         </div>
       `;
 
-      const expRes = await fetch('/api/workflow/step/explorer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ runId }),
-        signal: abortController?.signal,
-      });
+      const expTimer = setInterval(() => {
+        expElapsed++;
+        updateExplorerStatus();
+      }, 1000);
 
-      const expData = await expRes.json();
+      let expRes, expData;
+      try {
+        expRes = await fetch('/api/workflow/step/explorer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ runId }),
+          signal: abortController?.signal,
+        });
+        expData = await expRes.json();
+      } finally {
+        clearInterval(expTimer);
+      }
+
       if (!expRes.ok || !expData.success) {
         pendingEl.innerHTML = renderErrorCard(expData.error || 'Explorer turn failed', 'step_timeout');
         return;
       }
 
       // Step 2: Coder Turn & In-Memory Patch
+      let coderElapsed = 0;
+      const updateCoderStatus = () => {
+        const textEl = pendingEl.querySelector('#step-coder-status');
+        if (textEl) {
+          textEl.textContent = `Synthesizing patch & diff (<25s timeout) — Elapsed: ${coderElapsed}s... Reasoning model synthesizing fix...`;
+        }
+      };
+
       pendingEl.innerHTML = `
         <div class="assistant-bubble flex-1 space-y-2">
           <div class="flex items-center justify-between text-xs text-zinc-400 border-b border-zinc-800 pb-1.5">
@@ -565,20 +591,30 @@
             </span>
             <span class="font-mono text-[10px] text-emerald-400">Explorer OK (${expData.latencyMs}ms)</span>
           </div>
-          <div class="text-[11px] text-zinc-400 font-mono">
-            Synthesizing patch and generating in-memory unified diff...
+          <div id="step-coder-status" class="text-[11px] text-zinc-400 font-mono">
+            Synthesizing patch & diff (<25s timeout) — Elapsed: 0s... Reasoning model synthesizing fix...
           </div>
         </div>
       `;
 
-      const coderRes = await fetch('/api/workflow/step/coder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ runId }),
-        signal: abortController?.signal,
-      });
+      const coderTimer = setInterval(() => {
+        coderElapsed++;
+        updateCoderStatus();
+      }, 1000);
 
-      const coderData = await coderRes.json();
+      let coderRes, coderData;
+      try {
+        coderRes = await fetch('/api/workflow/step/coder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ runId }),
+          signal: abortController?.signal,
+        });
+        coderData = await coderRes.json();
+      } finally {
+        clearInterval(coderTimer);
+      }
+
       if (!coderRes.ok || !coderData.success) {
         pendingEl.innerHTML = renderErrorCard(coderData.error || 'Coder turn failed', 'step_timeout');
         return;

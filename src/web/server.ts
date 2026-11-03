@@ -748,7 +748,7 @@ export async function handleWildGuardRequest(
       // Atomic budget reservation for single turns in live mode
       let chatReservationId: string | undefined;
       const chatRunId = `run_chat_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-      const chatTimeoutMs = 7500;
+      const chatTimeoutMs = Math.min(agent.config.timeoutMs || 30000, 25000);
       const idempotencyKey = (typeof body.idempotencyKey === 'string' && body.idempotencyKey.trim())
         ? body.idempotencyKey.trim()
         : `idemp_chat_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
@@ -820,7 +820,7 @@ export async function handleWildGuardRequest(
             role: 'coder',
             messages,
             temperature: typeof body.temperature === 'number' ? body.temperature : 0,
-            maxTokens: typeof body.max_tokens === 'number' ? body.max_tokens : (typeof body.maxTokens === 'number' ? body.maxTokens : 30),
+            maxTokens: typeof body.max_tokens === 'number' ? body.max_tokens : (typeof body.maxTokens === 'number' ? body.maxTokens : 1024),
             timeoutMs: chatTimeoutMs,
             signal: chatController.signal,
             disableFallback: Boolean(body.disableFallback),
@@ -930,7 +930,7 @@ export async function handleWildGuardRequest(
         if (isTimeout) {
           sendJson(504, {
             success: false,
-            error: `Chat inference timed out after ${chatTimeoutMs}ms (Hobby execution limit).`,
+            error: `Chat inference timed out after ${chatTimeoutMs}ms (Gateway execution deadline).`,
             errorCategory: 'timeout',
           });
           return;
@@ -1032,8 +1032,8 @@ export async function handleWildGuardRequest(
         return;
       }
 
-      // Live mode verification: Exactly ONE outbound request, NO fallback, 7500ms timeout, atomic Redis budget
-      const verifyTimeoutMs = 7500;
+      // Live mode verification: Exactly ONE outbound request, NO fallback, bounded gateway timeout, atomic Redis budget
+      const verifyTimeoutMs = Math.min(agent.config.timeoutMs || 30000, 25000);
       const verifyRunId = `run_verify_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
       const idempotencyKey = (typeof body.idempotencyKey === 'string' && body.idempotencyKey.trim())
         ? body.idempotencyKey.trim()
