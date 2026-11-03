@@ -16,11 +16,12 @@
 | **Pre-Otari Baseline Branch** | Pre-Otari baseline branch: `main` | **VERIFIED** | Baseline commit: `4eedb60` (`chore: initial pre-Otari baseline`) |
 | **First Otari Introduction Commit** | The FIRST commit on `feat/otari-agent-harness` must introduce Otari integration | **VERIFIED** | Commit `c23a50930fd646b86fbebe02e80286976cd3e76b` introduced the complete Otari integration, security harness, web workspace, test suite, and judge documentation |
 | **Verified Commit Permalink** | Direct GitHub permalink to the introduction commit | **VERIFIED** | [`c23a509` Commit Permalink](https://github.com/JimmyOgb/wildguard/commit/c23a50930fd646b86fbebe02e80286976cd3e76b) |
-| **Audited Deployment HEAD** | Verified feature branch commit HEAD | **VERIFIED** | `26f66e9d84029914e59191585342e554e8cd4123` |
+| **Audited Deployment HEAD** | Verified feature branch commit HEAD | **VERIFIED** | `e68eb2b44a9b12c834fff8e2a02d2906696cf8bf` |
 | **Live Audited Preview Deployment** | Publicly accessible preview URL without login | **VERIFIED** | [https://wildguard-ewx3hdcst-jamism123.vercel.app](https://wildguard-ewx3hdcst-jamism123.vercel.app) |
 | **Vercel Deployment ID** | Active audited deployment ID | **VERIFIED** | `dpl_4mhdjHtCrhzRoPSUdP5VmjDTXYY8` |
 | **Published README Permalink** | Direct GitHub permalink to judge-ready README | **VERIFIED** | [`README.md` Permalink](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/README.md) |
 | **Developer Experience Feedback** | Formal responses to Otari questions | **VERIFIED** | [`OTARI_DX_FEEDBACK.md`](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/OTARI_DX_FEEDBACK.md) |
+| **Demonstration Video File** | 1080p 30fps MP4 walkthrough in repo root | **VERIFIED** | [`wildguard_hackathon_demo.mp4`](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/wildguard_hackathon_demo.mp4) (3m 57s, 6.05 MB) |
 
 ---
 
@@ -46,7 +47,7 @@
 
 ### Category 3: Project Demonstration (Up to 10 Points Available)
 - [x] **Working application demonstrates real use case (5 pts):** Fully functional, audited live preview with public interactive access and 132/132 passing tests across 18 test suites.
-- [x] **Visual walkthrough & demonstration (5 pts):** Complete 3-5 minute demo storyboard and recorded video walkthrough.
+- [x] **Visual walkthrough & demonstration (5 pts):** Complete 3-5 minute demo storyboard and recorded video walkthrough: [`wildguard_hackathon_demo.mp4`](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/wildguard_hackathon_demo.mp4) (3 minutes 57 seconds, 1080p, 30 FPS, articulate narration & synchronized subtitles).
 
 ---
 

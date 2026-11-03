@@ -333,6 +333,22 @@ The WildGuard web interface (`frontend/`) is engineered to match the polished ae
 
 ## 10. Demonstration Walkthrough & Visual Evidence
 
+### 🎬 Official Hackathon Demonstration Video
+WildGuard includes a comprehensive 1080p demonstration video with articulate English narration and synchronized subtitles:
+
+- **Video File:** [`wildguard_hackathon_demo.mp4`](wildguard_hackathon_demo.mp4) (Available directly in the repository root)
+- **Duration:** 3 minutes 57 seconds (237.71s — within the 3 to 5 minute requirement)
+- **Format:** 1920x1080 Full HD, 30.0 FPS, H.264/AAC with embedded subtitles (`mov_text`)
+- **Key Chapters:**
+  1. *[0:00]* **The Autonomous Agent Threat Model:** Unsandboxed coding agent dangers (credential leaks, branch overwrites, budget drains).
+  2. *[0:38]* **Demo Workspace & Vulnerability Discovery:** Inspecting `src/paymentCalculator.ts` for positive infinity input validation edge cases.
+  3. *[1:14]* **Task Submission & Atomic Redis Lua Routing:** $0.05 pre-reservations dispatched to Mozilla Otari Gateway (`api.otari.ai/api/v1`).
+  4. *[1:47]* **Live Gateway Telemetry & Honest Boundary Disclosure:** Real Request ID `req_019a48bb-7ae1-7f8a-9a99-b141ea22e6b8`, 118 tokens, $0.000103 settled cost, and reasoning token UI card.
+  5. *[2:20]* **Deterministic Security Guardrails:** Blocking path traversal (`../../.env`), protected branch modification (`main`), and spending cap overruns.
+  6. *[2:52]* **Human-in-the-Loop Patch Review:** Reviewing unified diff, operator approval, and cold-start Redis workspace persistence.
+  7. *[3:18]* **Evaluation Coordinates & Otari DX Feedback:** 132/132 tests passing across 18 test suites and DX feedback summary.
+
+### Visual Layout Previews
 The repository includes visual capture assets documenting both desktop and mobile layouts across initial and active conversation states:
 
 | View Mode | Full Workspace Layout | Active Conversational State |
