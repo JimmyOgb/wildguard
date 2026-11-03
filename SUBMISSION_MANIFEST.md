@@ -16,7 +16,7 @@
 | **Pre-Otari Baseline Branch** | Pre-Otari baseline branch: `main` | **VERIFIED** | Baseline commit: `4eedb60` (`chore: initial pre-Otari baseline`) |
 | **First Otari Introduction Commit** | The FIRST commit on `feat/otari-agent-harness` must introduce Otari integration | **VERIFIED** | Commit `c23a50930fd646b86fbebe02e80286976cd3e76b` introduced the complete Otari integration, security harness, web workspace, test suite, and judge documentation |
 | **Verified Commit Permalink** | Direct GitHub permalink to the introduction commit | **VERIFIED** | [`c23a509` Commit Permalink](https://github.com/JimmyOgb/wildguard/commit/c23a50930fd646b86fbebe02e80286976cd3e76b) |
-| **Audited Deployment HEAD** | Verified feature branch commit HEAD | **VERIFIED** | `e68eb2b44a9b12c834fff8e2a02d2906696cf8bf` |
+| **Audited Deployment HEAD** | Verified feature branch commit HEAD | **VERIFIED** | `125bede364e5c738543db6c8db97e52cdfdf2082` |
 | **Live Audited Preview Deployment** | Publicly accessible preview URL without login | **VERIFIED** | [https://wildguard-3331kv7fe-jamism123.vercel.app](https://wildguard-3331kv7fe-jamism123.vercel.app) |
 | **Vercel Deployment ID** | Active audited deployment ID | **VERIFIED** | `dpl_A5Yjxhw6WxJvAhLDpcqJ73JDAUg2` |
 | **Published README Permalink** | Direct GitHub permalink to judge-ready README | **VERIFIED** | [`README.md` Permalink](https://github.com/JimmyOgb/wildguard/blob/feat/otari-agent-harness/README.md) |
