@@ -1,73 +1,179 @@
 # WildGuard 🛡️
-### Policy-Aware Multi-Model AI Coding Agent Harness & Observability Workspace
+> **Policy-aware, multi-model AI coding agent harness with deterministic guardrails, zero-trust path containment, and real-time financial observability.**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)](package.json)
-[![Tests: 132 Passing](https://img.shields.io/badge/Tests-132%20Passing%20(18%20Suites)-brightgreen.svg)](tests/wildguard.test.ts)
+[![Tests: 140 Passing](https://img.shields.io/badge/Tests-140%20Passing%20(19%20Suites)-brightgreen.svg)](tests/wildguard.test.ts)
 [![AI Gateway](https://img.shields.io/badge/AI%20Gateway-Otari.ai%20(api.otari.ai)-FF6B6B)](https://otari.ai)
-[![Architecture](https://img.shields.io/badge/Architecture-Open--Weight%20Multi--Model-purple.svg)](#multi-model-strategy--gateway-fallback)
-[![Security Hardened](https://img.shields.io/badge/Security-Stage%204.19%20Hardened-orange.svg)](#deterministic-security-architecture-stage-26-hardened)
-[![Design](https://img.shields.io/badge/Frontend-GenChat%20Aligned-6366F1.svg)](#conversational-workspace--user-experience)
-
----
-
-## 1. Executive Summary & Hackathon Context
-
-**WildGuard** is an open-source, policy-governed autonomous AI coding agent and interactive developer workspace engineered for the **Mozilla OSAI "Developers Wilding" Hackathon** (November 2026).
-
-WildGuard addresses a fundamental flaw in modern autonomous coding agents: **unconstrained execution privileges**. When developers grant autonomous agents unrestricted shell, filesystem, and API access, subtle model hallucinations or prompt injections can trigger devastating failures—accidental commits to production branches, secret leakage via `.env` extraction, unauthorized dependency injections, NTFS alternate-data-stream bypasses, and unbounded API credit drain.
-
-WildGuard solves this by deploying a **zero-trust deterministic policy harness** around a multi-model pipeline powered by the **[Otari.ai](https://otari.ai)** unified AI gateway. By assigning specialized open-weight models to distinct operational roles, imposing mathematical path-containment barriers, gating risky operations behind human-in-the-loop approvals, and strictly tracking every micro-dollar of token expenditure, WildGuard proves that autonomy and rigorous security can operate in perfect harmony.
-
-- **Hackathon:** Mozilla OSAI / Otari Developers Wilding: Online
-- **Unified AI Gateway:** Otari API (`https://api.otari.ai/api/v1`)
-- **Repository:** [`JimmyOgb/wildguard`](https://github.com/JimmyOgb/wildguard)
-- **Target Feature Branch:** `feat/otari-agent-harness`
-- **First Otari Integration Commit:** [`c23a509`](https://github.com/JimmyOgb/wildguard/commit/c23a50930fd646b86fbebe02e80286976cd3e76b) (`feat: otari gateway multi-model harness, guardrails, and telemetry`)
-- **Live Audited Preview Deployment:** [https://wildguard-acuv19bqm-jamism123.vercel.app](https://wildguard-acuv19bqm-jamism123.vercel.app) (Deployment ID: `dpl_FYgh87qyeMT22vZ5rnht4L7BAqzE`)
-- **Automated Test Coverage:** 132/132 unit and integration tests passing across 18 test suites
-- **Frontend Reference:** Closely aligned with the polished, production-grade [GenChat reference design](https://genchat-nine.vercel.app/)
+[![Architecture](https://img.shields.io/badge/Architecture-Open--Weight%20Multi--Model-purple.svg)](#5-architecture-and-agent-roles)
+[![Live Deployed Preview](https://img.shields.io/badge/Deployment-Live%20Preview-success.svg)](https://wildguard-3byh0egus-jamism123.vercel.app)
 
 ---
 
 ## ⚡ How to Test (Judge & Evaluator Guide)
 
-Judges and evaluators can immediately test WildGuard directly on the live preview deployment without registration, login credentials, or personal API keys:
+This section provides complete, copy-pasteable instructions for installing, configuring, running, and verifying WildGuard locally. **No API keys or paid credits are required to run the full test suite or test the web interface locally.**
 
-🔗 **Live Public Preview URL:** [https://wildguard-acuv19bqm-jamism123.vercel.app](https://wildguard-acuv19bqm-jamism123.vercel.app)  
-🎯 **Active Audited Deployment ID:** `dpl_FYgh87qyeMT22vZ5rnht4L7BAqzE`  
-🛡️ **Public Access Mode:** `auth.mode: "public_interactive"` (Zero credentials required)
+### A. Prerequisites
+- **Node.js:** `v20.0.0` or higher (verified on Node.js `v24.15.0`).
+- **npm:** `v10.0.0` or higher (verified on npm `v11.12.1`).
+- **Git:** Installed and available in PATH.
+- **Dependencies:** **Zero external npm runtime packages.** WildGuard is engineered using pure TypeScript and the Node.js standard library (`node:http`, `node:fs`, `node:crypto`, `node:path`, `node:test`). Dev dependencies are limited to `@types/node` and `typescript`.
 
-### What Judges Can Test Live Without Login:
-1. **Interactive Policy-Aware Chat & Gateway Inference:**
-   - Run prompt turns selecting the **Explorer** (`deepseek/deepseek-v4.1-flash`) or **Coder** (`alibaba/qwen-3.5-35b-a3b`) role.
-   - Send single verification turns via the composer. In Stage 4.23, an authorized public test proved real gateway connectivity (HTTP 200, 118 tokens, $0.000103 settled cost).
-2. **Demo Workspace & Safe Repository Exploration:**
-   - Browse the isolated, ephemeral demo project files in the web workspace.
-   - State and isolated changes are durably preserved across serverless invocations via Upstash Redis (`wildguard:workspace:<sessionId>`).
-3. **Step Loop Coding Workflow:**
-   - Execute bounded single-step planning and patch generation (`POST /api/workflow/step`).
-   - Each step is bounded under 10 seconds to fit within Vercel serverless execution limits.
-4. **Deterministic In-Memory Guardrails & Security Policies:**
-   - Attempt forbidden actions: reading `.env`, modifying protected `main` branches, NTFS alternate streams (`file:hidden::$DATA`), or parent directory traversal (`../`).
-   - Observe deterministic, immediate policy blocking with explicit RCE defense and guardrail banners.
-5. **Human-in-the-Loop Diff Review & Patch Application:**
-   - Inspect proposed unified diffs in the built-in diff viewer.
-   - Accept or reject changes to feature branches.
-6. **Real-Time Financial Telemetry & Budget Caps:**
-   - View atomic budget reservations ($0.05 per turn) and micro-dollar settlement counters backed by Upstash Redis ($10.00 global ceiling, $1.50 per-run cap).
+### B. Installation
+Clone the repository, switch to the official hackathon feature branch, and install dev dependencies:
 
-### Expected Behaviors & Platform Boundaries:
-- **Autonomous Monolithic Loops:** To protect users against Vercel Hobby 10-second serverless execution timeouts, unbounded monolithic loops (`POST /api/chat` with full autonomous execution) fail-fast with HTTP 400 `hobby_timeout_prevention`. Evaluators should use the **Step Loop** workflow or single-turn prompts.
-- **Reasoning Token Behavior:** Advanced reasoning models like Qwen 3.5 allocate tokens to internal reasoning before emitting output. If the completion token limit is reached during reasoning, the gateway returns HTTP 200 OK with empty content; WildGuard's UI displays an informative notice explaining this behavior.
-- **Deterministic Policy Runner:** For zero-trust security and to prevent Remote Code Execution (RCE) on shared hosting, repository policy verification runs using an in-memory deterministic runner.
+```bash
+# 1. Clone the repository
+git clone https://github.com/JimmyOgb/wildguard.git
+
+# 2. Enter workspace directory
+cd wildguard
+
+# 3. Checkout the active hackathon feature branch
+git checkout feat/otari-agent-harness
+
+# 4. Install dev dependencies (TypeScript compiler and type definitions)
+npm install
+```
+
+### C. Configuration
+Copy the provided environment template:
+
+```bash
+cp .env.example .env
+```
+
+By default, `.env` is pre-configured for **zero-cost offline simulation mode**:
+```ini
+# Gateway Configuration
+OTARI_BASE_URL=https://api.otari.ai/api/v1
+OTARI_API_KEY=your_otari_api_key_here
+
+# Execution Mode: "simulation" (default, safe, zero-cost) or "live" (calls Otari)
+WILDGUARD_MODE=simulation
+
+# Financial Budget Controls: Max USD cost permitted per agent run (default: 1.50)
+WILDGUARD_MAX_RUN_COST_USD=1.50
+
+# Request Timeout in milliseconds (default: 30000)
+OTARI_TIMEOUT_MS=30000
+
+# Open-Weight Model Architecture (Role-Based Routing)
+OTARI_EXPLORER_MODEL=deepseek/deepseek-v4.1-flash
+OTARI_CODER_MODEL=alibaba/qwen-3.5-35b-a3b
+OTARI_FALLBACK_MODEL=meta-llama/llama-3.3-70b-instruct
+```
+
+- **Required settings for evaluation:** None. If `OTARI_API_KEY` is empty, WildGuard automatically and safely defaults to `simulation` mode.
+- **Never put real credentials in version control.** The `.env` file is excluded via `.gitignore`.
+
+### D. Run Locally
+Build the TypeScript project and start the local HTTP server:
+
+```bash
+# Build TypeScript and synchronize frontend assets
+npm run build
+
+# Start the web workspace server
+npm start
+```
+
+*(Alternatively, run `npm run serve` to compile and launch in a single step).*
+
+- **Local URL:** `http://localhost:3000` (configurable via `PORT` and `HOST` environment variables).
+- **Startup Confirmation:** The terminal outputs:
+  ```text
+  🛡️ WildGuard GenChat UI running at http://localhost:3000
+  ```
+- Open `http://localhost:3000` in your browser. You will see the GenChat-styled dark interface with the repository header, live status badges (`Explorer: Idle`, `Coder: Idle`, `Fallback: Standby`), and telemetry counters.
+
+### E. Run Without API Credentials (Simulation Mode)
+When running without an Otari API key (`WILDGUARD_MODE=simulation`):
+1. **Interactive Chat & Workflow:** Enter any coding request (e.g., *"Add error handling to payment calculator"*). WildGuard performs simulated token streaming, simulates model role transitions, and produces structured mock plans without incurring network latency or financial cost.
+2. **Deterministic Guardrails Testing:** Enter requests that attempt forbidden operations:
+   - Path traversal: `../../.env` or `../package.json`
+   - Reading credentials: `.env`, `.env.local`, `id_rsa`, `secrets.json`
+   - Protected branch tampering: Writing directly to `main` or `master`
+   - Windows-specific exploits: NTFS alternate data streams (`file.ts::$DATA`), trailing dot bypasses (`.env.`), or reserved DOS names (`CON`, `NUL`)
+   - **Result:** WildGuard's deterministic guardrails instantly intercept and block these actions before any file I/O occurs, displaying explicit policy violation notices.
+3. **Human-in-the-Loop Patch Approval:** When a code patch is proposed, inspect the color-coded unified diff viewer. Click **Accept Patch** or **Reject** to verify the approval workflow.
+
+> **Transparency Note:** Simulated turns are explicitly labeled in the UI as `[Sim Mode]` with simulated spend indicators. Simulation is never represented as live inference.
+
+### F. Run Automated Verification
+Re-run all automated verification commands locally:
+
+#### 1. Static Type Checking
+```bash
+npm run typecheck
+```
+- **Command:** `tsc --noEmit`
+- **Verification:** Verifies strict TypeScript type safety across all engine modules, guards, MCP tools, and web server routes.
+- **Result:** Clean exit (0 errors).
+
+#### 2. Comprehensive Test Suite
+```bash
+npm test
+```
+- **Command:** `tsc && node --test dist/tests/wildguard.test.js`
+- **Verification:** Executes all unit and integration tests across 19 specialized test suites using Node's native test runner. Covers config validation, deterministic guardrails, Windows security hardening, MCP repo tools, model engine routing, decision gate timeouts, Redis budget reservations, server endpoints, and Vercel execution limits.
+- **Actual Verified Result:**
+  ```text
+  ✔ WildGuard Test Suite (24082.3371ms)
+  ℹ tests 140
+  ℹ suites 19
+  ℹ pass 140
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ```
+
+#### 3. Production Build
+```bash
+npm run build
+```
+- **Command:** `tsc && node scripts/copy_frontend.js`
+- **Verification:** Compiles TypeScript to `dist/` and copies `frontend/` static assets into `public/`.
+- **Result:** `Synchronized frontend/ assets into public/ build directory.`
+
+### G. Optional Live Otari Mode
+If you have an Otari API key and wish to test live inference against the actual Otari gateway:
+
+1. Open `.env` and configure:
+   ```ini
+   OTARI_API_KEY=your_actual_otari_key
+   WILDGUARD_MODE=live
+   WILDGUARD_MAX_RUN_COST_USD=1.50
+   OTARI_TIMEOUT_MS=25000
+   ```
+2. Restart the server (`npm run serve`).
+3. **Server-Side Credential Safety:** The API key is loaded only into server-side process memory. It is never exposed in client HTML, JavaScript, SSE streams, or status endpoints (`/api/status` returns only boolean `hasApiKey: true`).
+4. **Budget Protection:** WildGuard enforces a strict per-run spending cap (default `$1.50 USD`) and a global ceiling (`$10.00 USD`). If cumulative expenditure reaches the limit, inference immediately terminates with `aborted_budget`.
+5. **Notice:** Live inference consumes credits on your Otari account. Live mode is completely optional—the automated test suite and local simulation mode fully exercise WildGuard's architecture without an API key.
+
+### H. Expected Results & Verification Matrix
+
+| Area | Local Simulation (`WILDGUARD_MODE=simulation`) | Live Deployed Preview (`wildguard-3byh0egus...`) |
+| :--- | :--- | :--- |
+| **API Key Required** | ❌ None ($0.00 cost) | ❌ None (Public interactive session) |
+| **Automated Tests** | ✅ 140/140 tests pass (19 suites) | N/A (Tested in CI / local harness) |
+| **Type Check** | ✅ 0 errors (`tsc --noEmit`) | N/A (Pre-build verified) |
+| **Deterministic Guardrails** | ✅ 100% locally verified & active | ✅ Active in cloud runtime |
+| **Diff Viewer & Approval** | ✅ Locally verified in UI modal | ✅ Active in cloud runtime |
+| **Otari Gateway Inference** | Simulated with mock telemetry | ✅ Live Coder role verified (Stage 4.27.2: Qwen 3.5, 11.78s, $0.000494 settled) |
+| **Workspace Persistence** | Local memory / filesystem | ✅ Redis-backed durable ephemeral workspace |
 
 ---
 
-## 2. Problem Statement & Threat Model
+## 1. What WildGuard Does
 
-Autonomous coding assistants frequently demand full local execution rights. In real-world enterprise repositories, this exposes development teams to severe security and operational risks:
+**WildGuard** is an open-source, policy-governed autonomous AI coding agent and interactive developer workspace engineered for the **Mozilla OSAI "Developers Wilding" Hackathon** (November 2026).
+
+### The Real-World Threat Model
+When developers grant autonomous coding assistants unrestricted shell, filesystem, and API access, subtle model hallucinations or prompt injections can trigger critical failures:
 
 ```
 +---------------------------------------------------------------------------------------+
@@ -90,11 +196,46 @@ Autonomous coding assistants frequently demand full local execution rights. In r
 +---------------------------------------------------------------------------------------+
 ```
 
-WildGuard implements **deterministic local containment** that intercepts, verifies, and bounds every agent action *before* any file is read, modified, or transmitted.
+WildGuard solves this by deploying a **zero-trust deterministic policy harness** around a multi-model pipeline powered by the **[Otari.ai](https://otari.ai)** unified AI gateway (`https://api.otari.ai/api/v1`). By assigning specialized open-weight models to distinct operational roles, imposing mathematical path-containment barriers, gating risky operations behind human-in-the-loop approvals, and strictly tracking every micro-dollar of token expenditure, WildGuard proves that autonomy and rigorous security can operate in perfect harmony.
 
 ---
 
-## 3. The WildGuard Solution & Agent Workflow
+## 2. Key Features
+
+- **Multi-Model Role Specialization:** Assigns specialized open-weight models to distinct operational tasks (Explorer for fast reconnaissance, Coder for deep reasoning and patch synthesis, Fallback for high-availability failover).
+- **Zero-Trust Deterministic Guardrails:** Blocks sensitive file reads (`.env`, private keys), prevents direct writes to protected branches (`main`, `master`), rejects path traversal (`../`), and eliminates Windows-specific bypass vectors (NTFS alternate streams, trailing dots/spaces, reserved DOS device names).
+- **Human-in-the-Loop Patch Gate:** High-risk actions (dependency modifications, shell commands, dynamic code execution) require explicit developer review and approval via an interactive unified diff modal.
+- **Fail-Closed Decision Gate:** Integrates with Otari's structured Decisions API for automated patch risk scoring, with a strict 10-second fail-closed fallback on timeout or error.
+- **Atomic Budget Governance:** Pre-reserves credit allocations before dispatching inference requests and settles against Otari's authoritative `usage.cost_usd` gateway telemetry, backed by Upstash Redis circuit breakers.
+- **GenChat-Aligned Web Interface:** Clean, responsive developer workspace featuring streaming assistant responses, live status badges, interactive diff review, and real-time financial observability.
+- **Zero Runtime Dependencies:** Built strictly with TypeScript and standard Node.js libraries—no bloated web frameworks, no black-box agent libraries.
+
+---
+
+## 3. Hackathon Feature Matrix & Official Rubric Alignment
+
+The official Mozilla OSAI hackathon scoring rubric awards up to **100 points maximum**:
+- **Open-Weight Models:** Up to **30 points**
+- **Otari Features:** Up to **60 points** (capped from 8 available categories totaling 80 points)
+- **Project & Demonstration:** Up to **10 points**
+
+| Category | Rubric Item | Max Pts | WildGuard Implementation Status | Verification Source |
+| :--- | :--- | :---: | :--- | :--- |
+| **Open-Weight Models** | Single open-weight model | 20 | Integrated via Otari gateway | `src/otari/wildguardEngine.ts` |
+| **Open-Weight Models** | 2+ models serving distinct roles | 10 | **Explorer** (`deepseek-v4.1-flash`) + **Coder** (`qwen-3.5-35b-a3b`) | `src/otari/wildguardEngine.ts` |
+| **Otari Features** | Model routing and fallbacks | 10 | Automatic failover to `llama-3.3-70b-instruct` on 5xx/timeout | `src/otari/wildguardEngine.ts` |
+| **Otari Features** | Application repository tools | 10 | Sandboxed repo tools (`list_files`, `read_file`, `apply_patch`, `create_branch`) | `src/otari/mcpRepoTools.ts` |
+| **Otari Features** | Budgets & spending limits | 10 | Hard micro-dollar spending ceiling ($1.50/run, $10.00 global) with circuit breaker | `src/otari/telemetry.ts` & `src/otari/redisBudgetManager.ts` |
+| **Otari Features** | Multiple models distinct roles | 10 | Orchestrated Explorer reconnaissance + Coder synthesis pipeline | `src/otari/agentLoop.ts` |
+| **Otari Features** | Deterministic guardrails | 10 | Zero-trust path normalization, secret blocking, protected branch lock | `src/otari/guardrails.ts` |
+| **Otari Features** | Structured Decisions API | 10 | Quality/safety assessment gate with 10s timeout fail-closed fallback | `src/otari/decisionGate.ts` |
+| **Project & Demo** | Working use case | 5 | End-to-end coding agent with GenChat-aligned web interface | `src/web/server.ts` & `frontend/` |
+| **Project & Demo** | Demo video & walkthrough | 5 | Polished 1080p 30fps demonstration video and live preview deployment | [Demo Section](#10-demo-and-deployment-information) |
+| **TOTAL** | **Maximum Capped Score** | **100** | **Comprehensive Full-Scope Alignment** | **140 Automated Tests Passing (19 Suites)** |
+
+---
+
+## 4. Architecture and Agent Roles
 
 WildGuard operates as an autonomous yet tightly governed lifecycle loop:
 
@@ -128,42 +269,7 @@ flowchart TD
     end
 ```
 
----
-
-## 4. Hackathon Feature Matrix & Official Rubric Alignment
-
-The official Mozilla OSAI hackathon scoring rubric awards up to **100 points maximum**:
-- **Open-Weight Models:** Up to **30 points**
-- **Otari Features:** Up to **60 points** (capped from 8 available categories totaling 80 points)
-- **Project & Demonstration:** Up to **10 points**
-
-WildGuard is meticulously engineered to achieve the maximum score across every evaluated criteria:
-
-| Category | Rubric Item | Max Pts | WildGuard Implementation Status | Verification Source |
-| :--- | :--- | :---: | :--- | :--- |
-| **Open-Weight Models** | Single open-weight model | 20 | Integrated via Otari gateway | `src/otari/wildguardEngine.ts` |
-| **Open-Weight Models** | 2+ models serving distinct roles | 10 | **Explorer** (`deepseek-v4.1-flash`) + **Coder** (`qwen-3.5-35b-a3b`) | `src/otari/wildguardEngine.ts` |
-| **Otari Features** | Model routing and fallbacks | 10 | Automatic failover to `llama-3.3-70b-instruct` on 5xx/timeout | `src/otari/wildguardEngine.ts` |
-| **Otari Features** | Application repository tools | 10 | Sandboxed repo tools (`list_files`, `read_file`, `apply_patch`, `create_branch`) | `src/otari/mcpRepoTools.ts` |
-| **Otari Features** | Budgets & spending limits | 10 | Hard micro-dollar spending ceiling ($1.50) with circuit breaker | `src/otari/telemetry.ts` |
-| **Otari Features** | Multiple models distinct roles | 10 | Orchestrated Explorer reconnaissance + Coder synthesis pipeline | `src/otari/agentLoop.ts` |
-| **Otari Features** | Deterministic guardrails | 10 | Zero-trust path normalization, secret blocking, protected branch lock | `src/otari/guardrails.ts` |
-| **Otari Features** | Structured Decisions API | 10 | Quality/safety assessment gate with 10s timeout fail-closed fallback | `src/otari/decisionGate.ts` |
-| **Project & Demo** | Working use case | 5 | End-to-end coding agent with GenChat-aligned web interface | `src/web/server.ts` & `frontend/` |
-| **Project & Demo** | Demo video & walkthrough | 5 | Recorded walkthrough demonstrating safety guardrails and live workflow | [Demo Section](#10-demonstration-walkthrough--visual-evidence) |
-| **TOTAL** | **Maximum Capped Score** | **100** | **Comprehensive Full-Scope Alignment** | **132 Automated Tests Passing (18 Suites)** |
-
-> **Transparent Scope Disclosure:**
-> 1. *Repository Tools:* WildGuard implements application-owned, local sandboxed repository tools conforming to the MCP schema (`mcpRepoTools.ts`). It does not rely on unverified third-party hosted MCP servers.
-> 2. *Test Execution:* Code verification executes locally via Node.js test runners within the bounded project workspace, rather than remote hosted sandboxes.
-> 3. *Web Fetch/Search:* Documented in OpenAPI references; deliberately not enabled in agent execution to preserve the zero-trust data boundary.
-> 4. *Simulation vs. Live Execution:* Both modes are fully implemented. Simulation mode requires zero API credits ($0 spend) for test automation; Live mode connects directly to `https://api.otari.ai/api/v1` when an `OTARI_API_KEY` is provided.
-
----
-
-## 5. Architectural Deep Dive
-
-WildGuard is built in modular TypeScript with strict type boundaries, complete separation of concerns, and zero external dependencies for its core security logic:
+### Module Responsibilities
 
 ```
                                       +---------------------------------------------+
@@ -200,8 +306,6 @@ WildGuard is built in modular TypeScript with strict type boundaries, complete s
                         +----------------------------+   +------------------------------------+
 ```
 
-### Module Responsibilities
-
 - **`src/otari/config.ts`**: Validates configuration, enforces budget constraints, handles model aliases, and detects simulation vs. live mode.
 - **`src/otari/guardrails.ts`**: Pure, deterministic zero-trust engine. Normalizes paths, blocks sensitive file access, prevents branch tampering, and defeats path-traversal attacks.
 - **`src/otari/mcpRepoTools.ts`**: Sandboxed repository manipulation tools. Emits unified diffs, checks permissions, and performs pre-write TOCTOU checks.
@@ -209,34 +313,15 @@ WildGuard is built in modular TypeScript with strict type boundaries, complete s
 - **`src/otari/wildguardEngine.ts`**: Manages model roles (Explorer, Coder, Fallback), executes inference via Otari's unified gateway, and handles transparent failovers.
 - **`src/otari/agentLoop.ts`**: Coordinates the multi-turn agent interaction loop from user prompt to final verified patch.
 - **`src/otari/telemetry.ts`**: Records real-time token metrics, validates financial payloads, tracks micro-dollar spend, and triggers circuit breakers.
-- **`src/web/server.ts`**: Lightweight, production-grade HTTP/API server serving the GenChat-aligned frontend and streaming execution events.
+- **`src/otari/redisBudgetManager.ts`**: Manages atomic pre-reservations and settlements backed by Upstash Redis Lua scripts.
+- **`src/otari/workflowManager.ts`**: Orchestrates client-driven bounded step execution loops.
+- **`src/web/server.ts`**: Lightweight HTTP/API server serving the GenChat-aligned frontend and streaming execution events.
 
 ---
 
-## 6. Multi-Model Strategy & Gateway Fallback
+## 5. Security and Policy Controls
 
-WildGuard utilizes a multi-model specialization strategy, leveraging the best characteristics of leading open-weight architectures:
-
-| Role | Default Candidate Model | Alternative Candidate | Architectural Rationale |
-| :--- | :--- | :--- | :--- |
-| **Explorer** | `deepseek/deepseek-v4.1-flash` | `qwen/qwen-2.5-coder-7b` | Ultra-fast token generation, low cost per 1M tokens, optimized for rapid repository search, file discovery, and broad structural planning. |
-| **Coder** | `alibaba/qwen-3.5-35b-a3b` | `deepseek/deepseek-r1` | High-precision coding and reasoning model. Capable of generating syntactically valid unified diffs and addressing complex logic bugs. |
-| **Fallback** | `meta-llama/llama-3.3-70b-instruct` | `ollama:llama3` | High-resilience, widely available foundation model invoked automatically when primary endpoints encounter transient 5xx errors or network timeouts. |
-
-### Automated Fallback Circuit
-
-1. WildGuard attempts inference using the role's assigned primary model.
-2. If the Otari gateway responds with an authentication error (HTTP 401), WildGuard halts immediately—classifying it as a non-recoverable configuration defect without burning fallback tokens.
-3. If the gateway encounters rate limits (HTTP 429), gateway timeouts (HTTP 504), or internal errors (HTTP 500/502/503), WildGuard:
-   - Verifies remaining budget headroom *before* invoking fallback inference.
-   - Transparently switches to `meta-llama/llama-3.3-70b-instruct`.
-   - Records the fallback activation in session telemetry (`Otari-Fallback: true`).
-
----
-
-## 7. Deterministic Security Architecture (Stage 2.6 Hardened)
-
-WildGuard's security layer was extensively hardened during **Stage 2.6 Security Remediation**, establishing state-of-the-art protection against both POSIX and Windows-specific exploit vectors:
+WildGuard's security layer was extensively hardened during **Stage 2.6 Security Remediation**, establishing robust protection against both POSIX and Windows-specific exploit vectors:
 
 ```
 +------------------------------------------------------------------------------------------------+
@@ -274,240 +359,87 @@ WildGuard's security layer was extensively hardened during **Stage 2.6 Security 
 
 ---
 
-## 8. Financial Governance & Budget Telemetry
+## 6. Otari.ai Integration and Model Routing
+
+WildGuard utilizes a multi-model specialization strategy, leveraging the best characteristics of leading open-weight architectures:
+
+| Role | Candidate Model | Architectural Rationale | Live Verification Status |
+| :--- | :--- | :--- | :--- |
+| **Explorer** | `deepseek/deepseek-v4.1-flash` | Ultra-fast token generation, low cost per 1M tokens, optimized for rapid repository search, file discovery, and broad structural planning. | Local test verified; live request timed out under 7.5s limit in Stage 4.25 (timeout repaired to 25s in Stage 4.27). |
+| **Coder** | `alibaba/qwen-3.5-35b-a3b` | High-precision coding and reasoning model. Capable of generating syntactically valid unified diffs and addressing complex logic bugs. | **Live verified in Stage 4.27.2:** HTTP 200, 11.78s latency, 489 completion tokens, valid Python code generated, $0.000494 settled. |
+| **Fallback** | `meta-llama/llama-3.3-70b-instruct` | High-resilience foundation model invoked automatically when primary endpoints encounter transient 5xx errors or network timeouts. | Local test verified; transparent failover simulated and tested across test suites. |
+
+### Automated Fallback Circuit
+1. WildGuard attempts inference using the role's assigned primary model.
+2. If the Otari gateway responds with an authentication error (HTTP 401), WildGuard halts immediately—classifying it as a non-recoverable configuration defect without burning fallback tokens.
+3. If the gateway encounters rate limits (HTTP 429), gateway timeouts (HTTP 504), or internal errors (HTTP 500/502/503), WildGuard:
+   - Verifies remaining budget headroom *before* invoking fallback inference.
+   - Transparently switches to `meta-llama/llama-3.3-70b-instruct`.
+   - Records the fallback activation in session telemetry (`Otari-Fallback: true`).
+
+---
+
+## 7. Budget Controls and Observability
 
 To ensure enterprise-grade fiscal predictability, WildGuard enforces strict financial governance:
 
-- **Hard Per-Run Ceiling:** Configured via `WILDGUARD_MAX_RUN_COST_USD` (default: **$1.50 USD**).
-- **Settlement Telemetry:** Captures Otari's authoritative `usage.cost_usd` header rather than estimated token counts alone.
-- **Immediate Circuit Breaker:** If cumulative cost equals or exceeds the ceiling, inference is instantly terminated with `aborted_budget`.
-- **Pre-Fallback Budget Verification:** Fallback inference is prohibited if the remaining budget cannot cover the fallback model's baseline invocation.
-- **Strict Metric Isolation:** Live expenditures and offline simulation metrics are tracked in isolated telemetry buckets and never conflated.
+- **Per-Run Spending Cap:** Configured via `WILDGUARD_MAX_RUN_COST_USD` (default: **$1.50 USD**).
+- **Global Budget Ceiling:** Configured via `WILDGUARD_GLOBAL_BUDGET_CEILING_USD` (default: **$10.00 USD**).
+- **Atomic Pre-Reservation:** Before dispatching an inference call, WildGuard atomically reserves `$0.05 USD` using Upstash Redis Lua scripts. If remaining headroom is insufficient, inference is refused fail-closed.
+- **Authoritative Settlement:** Captures Otari's authoritative `usage.cost_usd` gateway response header rather than relying on local token count estimates.
+- **Uncertain Charge Handling:** If an outbound request is interrupted or times out, the reservation is retained as an uncertain charge, preventing session recreation from resetting budget caps.
+- **Immediate Circuit Breaker:** If cumulative spend reaches the ceiling, inference is immediately terminated with `aborted_budget`.
 
 ---
 
-## 9. Conversational Workspace & User Experience
+## 8. Technology Stack
 
-The WildGuard web interface (`frontend/`) is engineered to match the polished aesthetic, interaction patterns, and user experience of the **GenChat reference design**:
-
-```
-+------------------------------------------------------------------------------------------------------+
-| [O] WildGuard             Repo: JimmyOgb/wildguard [feat/otari-agent-harness]    [Sim Mode] [$0.00]  |
-+----------------------+-------------------------------------------------------------------------------+
-| + New Conversation   |  WildGuard AI Assistant                                                       |
-|                      |  How can I help you safely improve your repository today?                     |
-| CONVERSATIONS        |                                                                               |
-| > Security Audit     |  +-------------------------------------------------------------------------+  |
-|   Add Feature        |  | Suggested Prompts:                                                      |  |
-|   Fix Traversal Bug  |  | [1. Audit sensitive files]  [2. Propose feature patch]  [3. Run tests]  |  |
-|                      |  +-------------------------------------------------------------------------+  |
-| STATUS INDICATORS    |                                                                               |
-| Explorer: Idle       |  User: Check for sensitive credential leaks in this repository.               |
-| Coder: Idle          |                                                                               |
-| Fallback: Standby    |  WildGuard (DeepSeek-v4.1-Flash):                                             |
-| Decision Gate: Ready |  I will safely inspect repository files while respecting zero-trust guardrails|
-| Budget: $0.00 / $1.50|  ```typescript                                                                |
-|                      |  // Deterministic guardrails active                                           |
-| [Settings] [Docs]    |  ```                                                                          |
-|                      |  +-------------------------------------------------------------------------+  |
-|                      |  | Message WildGuard... (Shift+Enter for newline)                     [Send] |  |
-|                      |  +-------------------------------------------------------------------------+  |
-+----------------------+-------------------------------------------------------------------------------+
-```
-
-### Key Frontend Capabilities
-- **Responsive Layout:** Desktop sidebar docked with smooth collapsible drawer for mobile and tablet screens (`@media (min-width: 768px)`).
-- **Streaming Assistant Responses:** Server-Sent Events (SSE) stream tokens directly into Markdown-rendered conversation blocks.
-- **Syntax-Highlighted Code:** Code blocks feature one-click copy buttons and syntax highlighting.
-- **Live Agent Status Badges:** Visual indicators reflect real-time backend state:
-  - 🔍 *Explorer analyzing repository*
-  - 💻 *Coder synthesizing patch*
-  - 🛡️ *Decision gate evaluating risk*
-  - ⏸️ *Awaiting human approval*
-  - 🔄 *Fallback model activated*
-  - ✅ *Tests passing & verified*
-- **Interactive Diff Viewer & Approval Modal:** Developers review proposed patches with color-coded additions/deletions and click **Accept Patch** or **Reject** to resume the agent loop.
-- **Real-Time Telemetry Bar:** Live tracking of tokens, settled spend, run budget ceiling, and Otari Request IDs.
+- **Runtime:** Node.js 20+ (pure ESM, tested on Node.js v24.15.0).
+- **Language:** TypeScript 5.8 with strict type checking enabled (`strict: true`, `noImplicitAny: true`).
+- **Dependencies:** **Zero external npm runtime packages.** Core engine uses Node.js standard library (`http`, `fs`, `crypto`, `path`).
+- **Testing:** Native Node.js test runner (`node:test`, `node:assert`).
+- **Storage & State:** Upstash Redis REST API (zero npm Redis client; pure standard `fetch`) for atomic budget reservations, brute-force rate limiting, and durable serverless workspaces.
+- **Frontend:** Semantic HTML5, modern CSS3 (GenChat-inspired responsive layout), and vanilla ES6 JavaScript (SSE streaming, dynamic DOM rendering).
+- **Deployment:** Vercel Serverless Functions (`maxDuration: 60`, Fluid Compute Hobby plan).
 
 ---
 
-## 10. Demonstration Walkthrough & Visual Evidence
+## 9. Current Limitations & Truthful Project Boundaries
 
-### 🎬 Official Hackathon Demonstration Video
-WildGuard includes a comprehensive 1080p demonstration video with articulate English narration and synchronized subtitles:
+In the spirit of complete transparency with judges and evaluators, we explicitly document verified capabilities versus current operational boundaries:
 
-- **Video File:** [`wildguard_hackathon_demo.mp4`](wildguard_hackathon_demo.mp4) (Available directly in the repository root)
-- **Duration:** 3 minutes 57 seconds (237.71s — within the 3 to 5 minute requirement)
-- **Format:** 1920x1080 Full HD, 30.0 FPS, H.264/AAC with embedded subtitles (`mov_text`)
-- **Key Chapters:**
-  1. *[0:00]* **The Autonomous Agent Threat Model:** Unsandboxed coding agent dangers (credential leaks, branch overwrites, budget drains).
-  2. *[0:38]* **Demo Workspace & Vulnerability Discovery:** Inspecting `src/paymentCalculator.ts` for positive infinity input validation edge cases.
-  3. *[1:14]* **Task Submission & Atomic Redis Lua Routing:** $0.05 pre-reservations dispatched to Mozilla Otari Gateway (`api.otari.ai/api/v1`).
-  4. *[1:47]* **Live Gateway Telemetry & Honest Boundary Disclosure:** Real Request ID `req_019a48bb-7ae1-7f8a-9a99-b141ea22e6b8`, 118 tokens, $0.000103 settled cost, and reasoning token UI card.
-  5. *[2:20]* **Deterministic Security Guardrails:** Blocking path traversal (`../../.env`), protected branch modification (`main`), and spending cap overruns.
-  6. *[2:52]* **Human-in-the-Loop Patch Review:** Reviewing unified diff, operator approval, and cold-start Redis workspace persistence.
-  7. *[3:18]* **Evaluation Coordinates & Otari DX Feedback:** 132/132 tests passing across 18 test suites and DX feedback summary.
-
-### Visual Layout Previews
-The repository includes visual capture assets documenting both desktop and mobile layouts across initial and active conversation states:
-
-| View Mode | Full Workspace Layout | Active Conversational State |
-| :--- | :--- | :--- |
-| **Desktop (1440x900)** | ![Desktop Workspace](wildguard_desktop.png) | ![Desktop Chat](wildguard_chat_desktop.png) |
-| **Mobile (390x844)** | ![Mobile Workspace](wildguard_mobile.png) | ![Mobile Chat](wildguard_chat_mobile.png) |
+1. **Live vs. Local Verification:**
+   - **Local Verification:** 140/140 automated tests pass locally across 19 suites. All deterministic guardrails, Windows path normalizers, MCP repo tools, and decision gate timeouts are fully verified in the test harness.
+   - **Live Production Inference:** Exactly ONE live request was authorized and verified in Stage 4.27.2: a Coder role invocation using `alibaba/qwen-3.5-35b-a3b` (`POST /api/chat`, `maxTokens: 512`), which returned HTTP 200 in 11.78s with valid Python code `def add_numbers(a, b): return a + b` and settled `$0.000494 USD`.
+   - **Explorer & Fallback Live Status:** Explorer and Fallback roles have passed comprehensive mock and integration tests, but have not been independently re-run against live Otari endpoints post-repair to conserve hackathon budget credits.
+2. **Vercel Hobby Serverless Execution Limits:**
+   - On Vercel Hobby, serverless function executions have a 10-second default timeout (extended to 60s via `maxDuration: 60` with Fluid Compute). To prevent unexpected aborts during multi-step agent reasoning, WildGuard disables monolithic multi-turn loops on Vercel (`hobby_timeout_prevention`) in favor of bounded **Step Loop** execution (`POST /api/workflow/step`).
+3. **Reasoning Token Behavior:**
+   - Advanced reasoning models like Qwen 3.5 allocate tokens to internal chain-of-thought before emitting visible output. If `maxTokens` is set too low (e.g., < 400), the model may exhaust its completion allocation during reasoning, returning HTTP 200 with empty final content. WildGuard's UI traps this condition and displays an informative diagnostic card.
+4. **Ephemeral Demo Workspaces:**
+   - Visitor workspaces on the live preview deployment are isolated in ephemeral `/tmp` directories backed by Upstash Redis session state (`wildguard:workspace:<sessionId>`). Changes made by visitors do not automatically create commits or publish to the upstream GitHub repository.
+5. **Human Approval Workflow:**
+   - Human approval and patch application have exhaustive local test coverage (`src/otari/mcpRepoTools.ts`, `tests/wildguard.test.ts`). The demo video demonstrates the UI review flow and diff presentation; it does not claim to execute a live git push to production branches.
 
 ---
 
-## 11. Installation & Quickstart
+## 10. Demo and Deployment Information
 
-### Prerequisites
-- **Node.js**: `v20.0.0` or higher (verified on Node.js `v24.15.0`)
-- **npm**: `v10.0.0` or higher
-- **Git**: Installed and available in PATH
+### Live Audited Preview Deployment
+- **Preview URL:** [https://wildguard-3byh0egus-jamism123.vercel.app](https://wildguard-3byh0egus-jamism123.vercel.app)
+- **Deployment ID:** `dpl_D4jR4chgcRsY9fP8aeiEJnmpqdrp`
+- **Access Mode:** Public Interactive (`auth.mode: "public_interactive"` — zero login credentials or personal API keys required).
+- **Environment:** Vercel Fluid Compute Hobby (Node.js 22 runtime, `maxDuration: 60`).
 
-### 1. Clone & Switch Branch
-```bash
-git clone https://github.com/JimmyOgb/wildguard.git
-cd wildguard
-git checkout feat/otari-agent-harness
-```
-
-### 2. Install Dependencies
-```bash
-npm install
-```
-
-### 3. Configure Environment
-```bash
-cp .env.example .env
-```
-*(By default, `.env` is configured for zero-cost offline simulation mode. To enable live inference, provide your `OTARI_API_KEY` and set `WILDGUARD_MODE=live`).*
-
-### 4. Build TypeScript
-```bash
-npm run build
-```
-
-### 5. Launch the Web Interface
-```bash
-npm start
-```
-*(Alternatively, `npm run serve` will re-compile TypeScript and launch the server).*
-
-Open your browser to: **`http://localhost:3000`**
+### Official Demonstration Video Artifact
+WildGuard includes a production-grade 1080p demonstration video capturing the actual deployed application:
+- **Clean Subtitle-Free Master:** `wildguard_live_production_demo_no_subtitles.mp4` (7.78 MB, 1920×1080 @ 30fps, 3m 48.37s). Re-encoded directly from raw Playwright browser capture with zero burned-in subtitles, preserving clean lower-third UI elements.
+- **Subtitled Backup:** `wildguard_live_production_demo.mp4` (9.71 MB, with embedded captions).
+- **Voiceover:** Synchronized natural English narration (`en-US-ChristopherNeural`) across 8 structured chapters demonstrating the threat model, live UI, deterministic guardrails, reasoning token diagnostics, and financial telemetry.
 
 ---
 
-## 12. Configuration Reference
-
-All settings can be specified in `.env` or set as system environment variables:
-
-| Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `WILDGUARD_MODE` | `simulation` | Operational mode: `simulation` (offline $0 cost) or `live` (calls Otari API). |
-| `OTARI_API_KEY` | *(empty)* | Otari Gateway API key (required only when `WILDGUARD_MODE=live`). |
-| `OTARI_BASE_URL` | `https://api.otari.ai/api/v1` | Base URL for the unified Otari AI gateway. |
-| `OTARI_MODEL_EXPLORER` | `deepseek/deepseek-v4.1-flash`| Model alias or ID for repository reconnaissance. |
-| `OTARI_MODEL_CODER` | `alibaba/qwen-3.5-35b-a3b` | Model alias or ID for code synthesis and patch generation. |
-| `OTARI_MODEL_FALLBACK` | `meta-llama/llama-3.3-70b-instruct` | Model alias or ID for automated resilience failover. |
-| `WILDGUARD_MAX_RUN_COST_USD` | `1.50` | Maximum allowable micro-dollar spend per execution run. |
-| `OTARI_TIMEOUT_MS` | `30000` | Network request timeout for inference calls (ms). |
-| `PORT` | `3000` | HTTP listening port for the web workspace server. |
-| `HOST` | `127.0.0.1` | Network interface binding for the web server. |
-
----
-
-## 13. Verification & Automated Testing
-
-WildGuard features a comprehensive automated test harness covering configuration, security policies, tool sandboxing, telemetry, decisions, and server endpoints.
-
-### Run All Tests
-```bash
-npm test
-```
-
-### Test Suite Execution Output
-```text
-▶ WildGuard Test Suite
-  ▶ Configuration Module
-    ✔ defaults to simulation mode when API key is missing (20.15ms)
-    ✔ enables live mode only when explicit flag AND non-empty key are present (11.60ms)
-    ✔ validates budget correctly and rejects invalid values (11.86ms)
-    ✔ validates timeouts and rejects values below 1000ms (12.36ms)
-    ✔ validates base URL format and protocols (10.34ms)
-    ✔ rejects empty model identifiers in configuration (10.74ms)
-  ✔ Configuration Module (79.76ms)
-  ▶ Deterministic Guardrails
-    ✔ blocks reads of .env and .env.* files (18.37ms)
-    ✔ blocks reads of private keys and credential stores (18.54ms)
-    ✔ blocks directory traversal attempts (13.26ms)
-    ✔ blocks UNC path escape attempts (12.30ms)
-    ✔ blocks direct writes and patches to protected branches (main, master) (12.93ms)
-    ✔ requires human approval for dependency modifications on feature branches (12.73ms)
-    ✔ allows regular file modifications on feature branches (11.87ms)
-    ✔ blocks creation of protected branches and malformed branch names (13.69ms)
-  ✔ Deterministic Guardrails (115.23ms)
-  ▶ Repository Tools
-    ✔ lists safe files and automatically omits secret files and hidden git dirs (38.12ms)
-    ✔ reads permitted files and returns file content and size (17.81ms)
-    ✔ refuses to read sensitive .env file (10.94ms)
-    ✔ refuses to apply patch to protected branch main (14.84ms)
-    ✔ generates diff preview and requires approval for dependency modification (12.52ms)
-    ✔ applies dependency patch when explicitly approved (15.26ms)
-    ✔ creates new branch and updates active branch tracking (14.18ms)
-  ✔ Repository Tools (125.47ms)
-  ▶ Multi-Model Engine & Telemetry
-    ✔ resolves appropriate model identifiers for Explorer, Coder, and Fallback roles (10.80ms)
-    ✔ executes simulation turn returning rich structured response and tracks simulated cost (15.91ms)
-    ✔ halts inference immediately when spending cap is exceeded (9.62ms)
-  ✔ Multi-Model Engine & Telemetry (36.69ms)
-  ▶ Decision Gate Module
-    ✔ approves safe modifications with low risk (11.32ms)
-    ✔ demands human approval if dynamic eval/exec/spawn is detected in proposed diff (8.70ms)
-    ✔ rejects dangerous shell deletion commands in diff (10.29ms)
-    ✔ deterministic local rejection takes absolute precedence over any remote result (8.27ms)
-  ✔ Decision Gate Module (39.01ms)
-  ▶ Agent Orchestration Loop
-    ✔ completes full agent turn successfully in simulation mode (19.37ms)
-    ✔ halts agent loop safely when budget is exhausted mid-turn (9.33ms)
-  ✔ Agent Orchestration Loop (28.98ms)
-  ▶ Security Hardening & Edge Cases
-    ✔ blocks read of arbitrary file containing private key content (18.33ms)
-    ✔ blocks Windows trailing dot bypass attempt (.env.) (16.83ms)
-    ✔ blocks Windows multi-dot trailing bypass attempt (.env..) (16.28ms)
-    ✔ blocks case-insensitive sensitive file access (.ENV) (10.10ms)
-    ✔ enforces case-insensitive dependency file approval (PACKAGE.JSON) (11.53ms)
-    ✔ blocks Windows trailing space bypass attempt (.env ) (17.61ms)
-    ✔ blocks NTFS alternate data stream (:stream) (16.62ms)
-    ✔ blocks NTFS alternate data stream (::$DATA) (13.51ms)
-    ✔ blocks Windows reserved DOS device names (CON, NUL, AUX) (13.63ms)
-    ✔ blocks symlinked parent directory escape for nonexistent target (19.43ms)
-    ✔ telemetry rejects negative cost values and preserves accumulated spend (13.85ms)
-    ✔ telemetry rejects negative and non-finite token counts (16.23ms)
-    ✔ Decisions API handles successful remote response (115.06ms)
-    ✔ Decisions API times out and fails closed without treating timeout as approval (131.90ms)
-    ✔ Decisions API fails closed on HTTP error and malformed JSON (35.20ms)
-    ✔ Decisions API fails closed when live mode is set but credentials are missing (11.25ms)
-    ✔ Engine classifies HTTP 401 as non-recoverable and halts without invoking fallback (19.38ms)
-    ✔ Engine halts before fallback if budget is exhausted (18.21ms)
-    ✔ Approval bypass attempt fails and preserves protected files on disk (19.51ms)
-  ✔ Security Hardening & Edge Cases (537.40ms)
-  ▶ Web Interface Server & API Endpoints
-    ✔ starts web server and serves static assets and API routes (6243.04ms)
-  ✔ Web Interface Server & API Endpoints (6243.73ms)
-✔ WildGuard Test Suite (7208.53ms)
-ℹ tests 50
-ℹ suites 9
-ℹ pass 50
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-```
-
----
-
-## 14. Project Structure
+## 11. Project Structure
 
 ```text
 WILDGUARD/
@@ -519,64 +451,46 @@ WILDGUARD/
 │   ├── index.ts                                # CLI entrypoint for standalone terminal execution
 │   ├── otari/                                  # Core WildGuard & Otari integration modules
 │   │   ├── agentLoop.ts                        # Multi-turn autonomous orchestration loop
+│   │   ├── authManager.ts                      # Session token and public interactive auth manager
 │   │   ├── config.ts                           # Configuration schema validation & budget settings
 │   │   ├── decisionGate.ts                     # Otari Decisions API & fail-closed quality gate
+│   │   ├── demoWorkspace.ts                    # Ephemeral visitor workspace isolation & Redis sync
 │   │   ├── guardrails.ts                       # Deterministic zero-trust security & path normalizer
 │   │   ├── mcpRepoTools.ts                     # Sandboxed repository filesystem tools
+│   │   ├── redisBudgetManager.ts               # Upstash Redis atomic reservations & budget settlement
 │   │   ├── telemetry.ts                        # Micro-dollar cost settlement & token tracker
-│   │   └── wildguardEngine.ts                  # Multi-model router & automated fallback engine
+│   │   ├── wildguardEngine.ts                  # Multi-model router & automated fallback engine
+│   │   └── workflowManager.ts                  # Step Loop execution and Vercel timeout governance
 │   └── web/                                    # Web workspace server
 │       └── server.ts                           # HTTP server, REST endpoints, and SSE stream handlers
 ├── tests/                                      # Automated test suite
-│   └── wildguard.test.ts                       # 50 comprehensive tests across 9 test suites
+│   └── wildguard.test.ts                       # 140 comprehensive tests across 19 test suites
 ├── scripts/                                    # Developer and CI utility scripts
+│   ├── copy_frontend.js                        # Synchronizes frontend assets to public build directory
 │   └── capture_screenshots.mjs                 # Headless Chrome visual capture automation
 ├── .env.example                                # Template for environment variables
 ├── package.json                                # NPM package configuration and scripts
 ├── tsconfig.json                               # Strict TypeScript compiler options
 ├── SUBMISSION_MANIFEST.md                      # Official hackathon submission metadata and audit trail
 ├── OTARI_DX_FEEDBACK.md                        # Developer experience feedback for the Otari team
-├── WILDGUARD_STAGE26_REMEDIATION_REPORT.md     # Stage 2.6 security audit and remediation report
+├── LICENSE                                     # Apache License, Version 2.0
 └── README.md                                   # This comprehensive judge-ready documentation
 ```
 
 ---
 
-## 15. Limitations & Future Roadmap
-
-WildGuard is currently in active development. We believe in complete transparency regarding current boundaries and future evolution:
-
-- **Application-Owned Tools vs. Remote MCP:** Current repository tools (`mcpRepoTools.ts`) are implemented as deterministic application-level functions following MCP schemas. Future releases will integrate remote Otari-hosted MCP servers over SSE/stdio transports.
-- **Local Test Execution:** Code verification executes within the host Node.js environment. Future roadmap includes containerized Docker/MicroVM sandboxes for untrusted code execution.
-- **Web Retrieval:** Web fetch and search endpoints are mapped in OpenAPI references but deactivated in current agent runs to maintain zero-trust perimeter boundaries.
-- **Multi-Agent Debates:** Planned support for multi-agent adversarial debate (e.g., Coder vs. Reviewer) mediated by Otari's multi-model routing.
-
----
-
-## 16. Developer Experience Feedback for Otari
-
-As part of the hackathon submission, the team compiled structured developer experience feedback in [`OTARI_DX_FEEDBACK.md`](OTARI_DX_FEEDBACK.md), highlighting:
-1. **Model Aliases:** Standardized naming conventions across diverse open-weight providers.
-2. **Deterministic Spend Signals:** The immense utility of the authoritative `usage.cost_usd` header for programmatic circuit breaking.
-3. **Decisions API:** Recommendations for richer structured schema validation during automated quality gating.
-
----
-
-## 17. License
+## 12. License & Hackathon Submission Checklist
 
 This project is licensed under the **Apache License, Version 2.0**. See the [LICENSE](LICENSE) file for full details.
 
----
-
-## 18. Hackathon Submission Checklist
-
+### Hackathon Verification Checklist
 - [x] **Repository Created:** [`https://github.com/JimmyOgb/wildguard`](https://github.com/JimmyOgb/wildguard)
-- [x] **Pre-Otari Baseline Preserved:** `4eedb60` (`chore: initial pre-Otari baseline`)
-- [x] **First Integration Commit Prepared:** Full Otari engine, security harness, web UI, tests, and documentation
-- [x] **Open-Weight Models Configured:** DeepSeek-v4.1-Flash + Qwen-3.5-35B-A3B + Llama-3.3-70B-Instruct
-- [x] **Automated Fallback Tested:** Transparent failover on 5xx / timeout
-- [x] **Budget Governance Active:** Micro-dollar telemetry & $1.50 hard stop circuit breaker
-- [x] **Deterministic Guardrails Enforced:** Zero-trust path containment & secret file redaction
-- [x] **GenChat Reference Design Aligned:** Responsive conversation workspace, diff viewer, and real-time status
-- [x] **Automated Tests Passing:** 50/50 tests passing locally with zero credit expenditure
-- [x] **Submission Manifest Completed:** Documented in [`SUBMISSION_MANIFEST.md`](SUBMISSION_MANIFEST.md)
+- [x] **Target Branch:** `feat/otari-agent-harness`
+- [x] **Open-Weight Multi-Model Architecture:** DeepSeek-v4.1-Flash (Explorer) + Qwen-3.5-35B-A3B (Coder) + Llama-3.3-70B-Instruct (Fallback)
+- [x] **Deterministic Guardrails Enforced:** Zero-trust path containment, Windows exploit defense, and secret file protection
+- [x] **Live Inference Verified:** Stage 4.27.2 authorized test: HTTP 200, 11.78s latency, 489 completion tokens, valid Python code generated, $0.000494 settled
+- [x] **Budget Governance Active:** Micro-dollar telemetry, atomic Redis pre-reservations, $1.50 per-run cap, $10.00 global ceiling
+- [x] **GenChat Reference Design Aligned:** Responsive conversation workspace, interactive diff viewer, real-time status badges
+- [x] **Automated Tests Passing:** **140/140 tests passing across 19 suites locally** with zero credit expenditure
+- [x] **Live Audited Deployment:** [https://wildguard-3byh0egus-jamism123.vercel.app](https://wildguard-3byh0egus-jamism123.vercel.app) (ID: `dpl_D4jR4chgcRsY9fP8aeiEJnmpqdrp`)
+- [x] **Demo Video Produced:** Clean 1080p 30fps demo (`wildguard_live_production_demo_no_subtitles.mp4`)
