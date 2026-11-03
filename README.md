@@ -25,7 +25,7 @@ WildGuard solves this by deploying a **zero-trust deterministic policy harness**
 - **Repository:** [`JimmyOgb/wildguard`](https://github.com/JimmyOgb/wildguard)
 - **Target Feature Branch:** `feat/otari-agent-harness`
 - **First Otari Integration Commit:** [`c23a509`](https://github.com/JimmyOgb/wildguard/commit/c23a50930fd646b86fbebe02e80286976cd3e76b) (`feat: otari gateway multi-model harness, guardrails, and telemetry`)
-- **Live Audited Preview Deployment:** [https://wildguard-ewx3hdcst-jamism123.vercel.app](https://wildguard-ewx3hdcst-jamism123.vercel.app) (Deployment ID: `dpl_4mhdjHtCrhzRoPSUdP5VmjDTXYY8`)
+- **Live Audited Preview Deployment:** [https://wildguard-3331kv7fe-jamism123.vercel.app](https://wildguard-3331kv7fe-jamism123.vercel.app) (Deployment ID: `dpl_A5Yjxhw6WxJvAhLDpcqJ73JDAUg2`)
 - **Automated Test Coverage:** 132/132 unit and integration tests passing across 18 test suites
 - **Frontend Reference:** Closely aligned with the polished, production-grade [GenChat reference design](https://genchat-nine.vercel.app/)
 
@@ -35,8 +35,8 @@ WildGuard solves this by deploying a **zero-trust deterministic policy harness**
 
 Judges and evaluators can immediately test WildGuard directly on the live preview deployment without registration, login credentials, or personal API keys:
 
-🔗 **Live Public Preview URL:** [https://wildguard-ewx3hdcst-jamism123.vercel.app](https://wildguard-ewx3hdcst-jamism123.vercel.app)  
-🎯 **Active Audited Deployment ID:** `dpl_4mhdjHtCrhzRoPSUdP5VmjDTXYY8`  
+🔗 **Live Public Preview URL:** [https://wildguard-3331kv7fe-jamism123.vercel.app](https://wildguard-3331kv7fe-jamism123.vercel.app)  
+🎯 **Active Audited Deployment ID:** `dpl_A5Yjxhw6WxJvAhLDpcqJ73JDAUg2`  
 🛡️ **Public Access Mode:** `auth.mode: "public_interactive"` (Zero credentials required)
 
 ### What Judges Can Test Live Without Login:
